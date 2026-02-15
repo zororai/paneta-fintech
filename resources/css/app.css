@@ -1,0 +1,298 @@
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-sans:
+        Instrument Sans, ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    --color-sidebar: var(--sidebar-background);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
+}
+
+@layer utilities {
+    body,
+    html {
+        --font-sans:
+            'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+            'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+            'Noto Color Emoji';
+    }
+}
+
+/* ========================================
+   PANÉTA Official Design System
+   ======================================== */
+
+:root {
+    /* PANÉTA Core Brand Colors (HEX reference) */
+    /* Primary Blue: #0B3D91 | Primary Dark: #072C66 | Accent Gold: #D4AF37 */
+    /* Accent Light Gold: #F1D27A | Dark Navy: #0A1A2F | Light BG: #F8FAFC */
+    /* Soft Gray: #E5E7EB | Text Dark: #1F2937 | White: #FFFFFF */
+
+    /* Light Mode - PANÉTA Theme */
+    --background: hsl(210 40% 98%);           /* #F8FAFC - Light Background */
+    --foreground: hsl(220 14% 16%);           /* #1F2937 - Text Dark */
+    --card: hsl(0 0% 100%);                   /* #FFFFFF - Pure White */
+    --card-foreground: hsl(220 14% 16%);      /* #1F2937 - Text Dark */
+    --popover: hsl(0 0% 100%);
+    --popover-foreground: hsl(220 14% 16%);
+    --primary: hsl(217 85% 31%);              /* #0B3D91 - Primary Blue */
+    --primary-foreground: hsl(0 0% 100%);     /* #FFFFFF - White */
+    --secondary: hsl(220 14% 96%);
+    --secondary-foreground: hsl(220 14% 16%);
+    --muted: hsl(220 14% 96%);
+    --muted-foreground: hsl(220 9% 46%);
+    --accent: hsl(43 65% 52%);                /* #D4AF37 - Accent Gold */
+    --accent-foreground: hsl(220 14% 16%);
+    --destructive: hsl(0 84% 60%);
+    --destructive-foreground: hsl(0 0% 100%);
+    --border: hsl(220 13% 91%);               /* #E5E7EB - Soft Gray */
+    --input: hsl(220 13% 91%);
+    --ring: hsl(217 85% 31%);                 /* #0B3D91 - Primary Blue */
+    --chart-1: hsl(217 85% 31%);              /* Primary Blue */
+    --chart-2: hsl(43 65% 52%);               /* Accent Gold */
+    --chart-3: hsl(213 65% 11%);              /* Navy */
+    --chart-4: hsl(43 80% 72%);               /* Light Gold */
+    --chart-5: hsl(217 70% 45%);              /* Medium Blue */
+    --radius: 0.5rem;
+    
+    /* PANÉTA Sidebar - Navy Theme */
+    --sidebar-background: hsl(213 65% 11%);   /* #0A1A2F - Dark Navy */
+    --sidebar-foreground: hsl(0 0% 100%);     /* White text */
+    --sidebar-primary: hsl(43 65% 52%);       /* #D4AF37 - Accent Gold */
+    --sidebar-primary-foreground: hsl(220 14% 16%);
+    --sidebar-accent: hsl(217 85% 31%);       /* #0B3D91 - Primary Blue */
+    --sidebar-accent-foreground: hsl(0 0% 100%);
+    --sidebar-border: hsl(213 50% 20%);
+    --sidebar-ring: hsl(43 65% 52%);          /* Gold ring */
+    --sidebar: hsl(213 65% 11%);
+
+    /* PANÉTA Custom Properties */
+    --paneta-primary: #0B3D91;
+    --paneta-primary-dark: #072C66;
+    --paneta-accent: #D4AF37;
+    --paneta-accent-light: #F1D27A;
+    --paneta-navy: #0A1A2F;
+    --paneta-bg: #F8FAFC;
+    --paneta-gray: #E5E7EB;
+    --paneta-text: #1F2937;
+    --paneta-white: #FFFFFF;
+}
+
+/* Dark Mode - PANÉTA Theme */
+.dark {
+    --background: hsl(213 70% 8%);            /* Darker Navy */
+    --foreground: hsl(0 0% 100%);             /* White */
+    --card: hsl(213 60% 12%);                 /* Navy Card */
+    --card-foreground: hsl(0 0% 100%);
+    --popover: hsl(213 60% 12%);
+    --popover-foreground: hsl(0 0% 100%);
+    --primary: hsl(43 65% 52%);               /* #D4AF37 - Accent Gold (inverted) */
+    --primary-foreground: hsl(220 14% 16%);
+    --secondary: hsl(213 50% 18%);
+    --secondary-foreground: hsl(0 0% 100%);
+    --muted: hsl(213 50% 18%);
+    --muted-foreground: hsl(220 9% 70%);
+    --accent: hsl(217 85% 45%);               /* Lighter Primary Blue */
+    --accent-foreground: hsl(0 0% 100%);
+    --destructive: hsl(0 84% 60%);
+    --destructive-foreground: hsl(0 0% 100%);
+    --border: hsl(213 50% 22%);
+    --input: hsl(213 50% 22%);
+    --ring: hsl(43 65% 52%);                  /* Gold ring */
+    --chart-1: hsl(217 85% 50%);              /* Primary Blue lighter */
+    --chart-2: hsl(43 65% 60%);               /* Gold lighter */
+    --chart-3: hsl(213 50% 30%);              /* Navy lighter */
+    --chart-4: hsl(43 80% 75%);               /* Light Gold */
+    --chart-5: hsl(217 70% 55%);              /* Medium Blue lighter */
+    
+    /* PANÉTA Sidebar Dark - Deeper Navy */
+    --sidebar-background: hsl(213 75% 6%);    /* Even darker navy */
+    --sidebar-foreground: hsl(0 0% 100%);
+    --sidebar-primary: hsl(43 65% 52%);       /* Gold */
+    --sidebar-primary-foreground: hsl(220 14% 16%);
+    --sidebar-accent: hsl(217 85% 40%);       /* Primary Blue */
+    --sidebar-accent-foreground: hsl(0 0% 100%);
+    --sidebar-border: hsl(213 50% 15%);
+    --sidebar-ring: hsl(43 65% 52%);
+    --sidebar: hsl(213 75% 6%);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-family: 'Inter', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    }
+}
+
+/* PANÉTA Custom Utility Classes */
+@layer utilities {
+    /* Brand Backgrounds */
+    .bg-paneta-primary {
+        background-color: var(--paneta-primary);
+    }
+    .bg-paneta-primary-dark {
+        background-color: var(--paneta-primary-dark);
+    }
+    .bg-paneta-navy {
+        background-color: var(--paneta-navy);
+    }
+    .bg-paneta-accent {
+        background-color: var(--paneta-accent);
+    }
+    .bg-paneta-accent-light {
+        background-color: var(--paneta-accent-light);
+    }
+    .bg-paneta-bg {
+        background-color: var(--paneta-bg);
+    }
+    .bg-paneta-gray {
+        background-color: var(--paneta-gray);
+    }
+
+    /* Brand Text Colors */
+    .text-paneta-primary {
+        color: var(--paneta-primary);
+    }
+    .text-paneta-primary-dark {
+        color: var(--paneta-primary-dark);
+    }
+    .text-paneta-navy {
+        color: var(--paneta-navy);
+    }
+    .text-paneta-accent {
+        color: var(--paneta-accent);
+    }
+    .text-paneta-accent-light {
+        color: var(--paneta-accent-light);
+    }
+    .text-paneta-text {
+        color: var(--paneta-text);
+    }
+
+    /* Brand Borders */
+    .border-paneta-primary {
+        border-color: var(--paneta-primary);
+    }
+    .border-paneta-gray {
+        border-color: var(--paneta-gray);
+    }
+    .border-paneta-accent {
+        border-color: var(--paneta-accent);
+    }
+
+    /* Hover States */
+    .hover\:bg-paneta-primary-dark:hover {
+        background-color: var(--paneta-primary-dark);
+    }
+    .hover\:bg-paneta-primary:hover {
+        background-color: var(--paneta-primary);
+    }
+    .hover\:text-paneta-accent:hover {
+        color: var(--paneta-accent);
+    }
+
+    /* PANÉTA Gradient */
+    .paneta-gradient {
+        background: linear-gradient(135deg, var(--paneta-primary) 0%, var(--paneta-primary-dark) 100%);
+    }
+
+    /* PANÉTA Card Style */
+    .paneta-card {
+        background-color: var(--paneta-white);
+        border: 1px solid var(--paneta-gray);
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    }
+
+    /* Gold Highlight (Premium features) */
+    .paneta-gold-highlight {
+        color: var(--paneta-accent);
+        font-weight: 600;
+    }
+
+    /* PANÉTA Button Primary */
+    .paneta-btn-primary {
+        background-color: var(--paneta-primary);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        transition: background-color 0.2s;
+    }
+    .paneta-btn-primary:hover {
+        background-color: var(--paneta-primary-dark);
+    }
+}
