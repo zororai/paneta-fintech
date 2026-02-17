@@ -12,12 +12,21 @@ class FxQuote extends Model
 
     protected $fillable = [
         'fx_provider_id',
+        'user_id',
+        'institution_id',
         'base_currency',
         'quote_currency',
+        'source_currency',
+        'destination_currency',
+        'source_amount',
+        'destination_amount',
         'rate',
         'bid_rate',
         'ask_rate',
         'spread_percentage',
+        'spread',
+        'fee',
+        'status',
         'expires_at',
     ];
 
@@ -26,12 +35,26 @@ class FxQuote extends Model
         'bid_rate' => 'decimal:8',
         'ask_rate' => 'decimal:8',
         'spread_percentage' => 'decimal:4',
+        'spread' => 'decimal:6',
+        'source_amount' => 'decimal:2',
+        'destination_amount' => 'decimal:2',
+        'fee' => 'decimal:2',
         'expires_at' => 'datetime',
     ];
 
     public function provider(): BelongsTo
     {
         return $this->belongsTo(FxProvider::class, 'fx_provider_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function institution(): BelongsTo
+    {
+        return $this->belongsTo(Institution::class);
     }
 
     public function isExpired(): bool

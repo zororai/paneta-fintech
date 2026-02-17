@@ -19,8 +19,8 @@ return new class extends Migration
             $table->timestamp('transaction_date');
             $table->timestamps();
 
-            $table->index(['aggregated_account_id', 'transaction_date']);
-            $table->unique(['aggregated_account_id', 'external_reference']);
+            $table->index(['aggregated_account_id', 'transaction_date'], 'agg_txn_account_date_idx');
+            $table->unique(['aggregated_account_id', 'external_reference'], 'agg_txn_account_ext_ref_unique');
         });
     }
 

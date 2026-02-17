@@ -19,7 +19,7 @@ return new class extends Migration
             $table->enum('status', ['active', 'stale', 'error', 'disconnected'])->default('active');
             $table->timestamps();
 
-            $table->unique(['user_id', 'institution_id', 'external_account_id']);
+            $table->unique(['user_id', 'institution_id', 'external_account_id'], 'agg_accounts_user_inst_ext_unique');
             $table->index(['user_id', 'status']);
         });
     }
