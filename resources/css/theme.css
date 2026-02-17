@@ -1,11 +1,11 @@
 /* PANÉTA Official Design System - Theme Variables */
 :root {
   /* Core Brand Colors */
-  --color-primary: #0B3D91;
-  --color-primary-dark: #072C66;
+  --color-primary: #4169E1;
+  --color-primary-dark: #3155B5;
   --color-accent: #D4AF37;
   --color-accent-light: #F1D27A;
-  --color-navy: #0A1A2F;
+  --color-navy: #1E3A5F;
   --color-bg: #F8FAFC;
   --color-gray: #E5E7EB;
   --color-text: #1F2937;
@@ -18,7 +18,7 @@
   --card-foreground: 220 14% 16%;
   --popover: 0 0% 100%;
   --popover-foreground: 220 14% 16%;
-  --primary: 217 85% 31%;
+  --primary: 225 73% 57%;
   --primary-foreground: 0 0% 100%;
   --secondary: 220 14% 96%;
   --secondary-foreground: 220 14% 16%;
@@ -30,17 +30,17 @@
   --destructive-foreground: 0 0% 100%;
   --border: 220 13% 91%;
   --input: 220 13% 91%;
-  --ring: 217 85% 31%;
+  --ring: 225 73% 57%;
   --radius: 0.5rem;
 
-  /* Sidebar PANÉTA Navy Theme */
-  --sidebar-background: 213 65% 11%;
+  /* Sidebar PANÉTA Royal Blue Theme */
+  --sidebar-background: 225 73% 57%;
   --sidebar-foreground: 0 0% 100%;
   --sidebar-primary: 43 65% 52%;
   --sidebar-primary-foreground: 220 14% 16%;
-  --sidebar-accent: 217 85% 31%;
+  --sidebar-accent: 225 60% 45%;
   --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-border: 213 50% 20%;
+  --sidebar-border: 225 60% 50%;
   --sidebar-ring: 43 65% 52%;
 }
 
@@ -66,13 +66,13 @@
   --ring: 43 65% 52%;
 
   /* Sidebar Dark Mode */
-  --sidebar-background: 213 70% 8%;
+  --sidebar-background: 225 73% 45%;
   --sidebar-foreground: 0 0% 100%;
   --sidebar-primary: 43 65% 52%;
   --sidebar-primary-foreground: 220 14% 16%;
-  --sidebar-accent: 217 85% 31%;
+  --sidebar-accent: 225 60% 35%;
   --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-border: 213 50% 15%;
+  --sidebar-border: 225 60% 40%;
   --sidebar-ring: 43 65% 52%;
 }
 

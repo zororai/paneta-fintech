@@ -2,7 +2,6 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import { BookOpen, Folder, LayoutGrid, Wallet, ArrowUpRight, Send, FileText, Shield, Users, ArrowRightLeft, TrendingUp } from 'lucide-vue-next';
 import NavFooter from '@/components/NavFooter.vue';
-import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import {
     Sidebar,
@@ -23,14 +22,6 @@ import { computed } from 'vue';
 const page = usePage();
 const user = computed(() => page.props.auth?.user as { role?: string } | undefined);
 const isAdmin = computed(() => user.value?.role === 'admin');
-
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
 
 const panetaNavItems: NavItem[] = [
     {
@@ -93,18 +84,7 @@ const adminNavItems: NavItem[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
-    },
-];
+const footerNavItems: NavItem[] = [];
 </script>
 
 <template>
@@ -122,8 +102,6 @@ const footerNavItems: NavItem[] = [
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="mainNavItems" />
-            
             <!-- PANÉTA Section -->
             <SidebarGroup class="px-2 py-0">
                 <SidebarGroupLabel>PANÉTA</SidebarGroupLabel>

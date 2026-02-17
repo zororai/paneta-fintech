@@ -95,8 +95,8 @@
 
 :root {
     /* PANÉTA Core Brand Colors (HEX reference) */
-    /* Primary Blue: #0B3D91 | Primary Dark: #072C66 | Accent Gold: #D4AF37 */
-    /* Accent Light Gold: #F1D27A | Dark Navy: #0A1A2F | Light BG: #F8FAFC */
+    /* Primary Royal Blue: #4169E1 | Primary Dark: #3155B5 | Accent Gold: #D4AF37 */
+    /* Accent Light Gold: #F1D27A | Dark Navy: #1E3A5F | Light BG: #F8FAFC */
     /* Soft Gray: #E5E7EB | Text Dark: #1F2937 | White: #FFFFFF */
 
     /* Light Mode - PANÉTA Theme */
@@ -106,7 +106,7 @@
     --card-foreground: hsl(220 14% 16%);      /* #1F2937 - Text Dark */
     --popover: hsl(0 0% 100%);
     --popover-foreground: hsl(220 14% 16%);
-    --primary: hsl(217 85% 31%);              /* #0B3D91 - Primary Blue */
+    --primary: hsl(225 73% 57%);              /* #4169E1 - Royal Blue */
     --primary-foreground: hsl(0 0% 100%);     /* #FFFFFF - White */
     --secondary: hsl(220 14% 96%);
     --secondary-foreground: hsl(220 14% 16%);
@@ -118,31 +118,31 @@
     --destructive-foreground: hsl(0 0% 100%);
     --border: hsl(220 13% 91%);               /* #E5E7EB - Soft Gray */
     --input: hsl(220 13% 91%);
-    --ring: hsl(217 85% 31%);                 /* #0B3D91 - Primary Blue */
-    --chart-1: hsl(217 85% 31%);              /* Primary Blue */
+    --ring: hsl(225 73% 57%);                 /* #4169E1 - Royal Blue */
+    --chart-1: hsl(225 73% 57%);              /* Royal Blue */
     --chart-2: hsl(43 65% 52%);               /* Accent Gold */
     --chart-3: hsl(213 65% 11%);              /* Navy */
     --chart-4: hsl(43 80% 72%);               /* Light Gold */
-    --chart-5: hsl(217 70% 45%);              /* Medium Blue */
+    --chart-5: hsl(225 73% 47%);              /* Darker Royal Blue */
     --radius: 0.5rem;
     
     /* PANÉTA Sidebar - Navy Theme */
-    --sidebar-background: hsl(213 65% 11%);   /* #0A1A2F - Dark Navy */
+    --sidebar-background: hsl(225 73% 57%);   /* #4169E1 - Royal Blue */
     --sidebar-foreground: hsl(0 0% 100%);     /* White text */
     --sidebar-primary: hsl(43 65% 52%);       /* #D4AF37 - Accent Gold */
     --sidebar-primary-foreground: hsl(220 14% 16%);
-    --sidebar-accent: hsl(217 85% 31%);       /* #0B3D91 - Primary Blue */
+    --sidebar-accent: hsl(225 60% 45%);       /* Darker Royal Blue */
     --sidebar-accent-foreground: hsl(0 0% 100%);
-    --sidebar-border: hsl(213 50% 20%);
+    --sidebar-border: hsl(225 60% 50%);
     --sidebar-ring: hsl(43 65% 52%);          /* Gold ring */
-    --sidebar: hsl(213 65% 11%);
+    --sidebar: hsl(225 73% 57%);
 
     /* PANÉTA Custom Properties */
-    --paneta-primary: #0B3D91;
-    --paneta-primary-dark: #072C66;
+    --paneta-primary: #4169E1;
+    --paneta-primary-dark: #3155B5;
     --paneta-accent: #D4AF37;
     --paneta-accent-light: #F1D27A;
-    --paneta-navy: #0A1A2F;
+    --paneta-navy: #1E3A5F;
     --paneta-bg: #F8FAFC;
     --paneta-gray: #E5E7EB;
     --paneta-text: #1F2937;
@@ -176,16 +176,16 @@
     --chart-4: hsl(43 80% 75%);               /* Light Gold */
     --chart-5: hsl(217 70% 55%);              /* Medium Blue lighter */
     
-    /* PANÉTA Sidebar Dark - Deeper Navy */
-    --sidebar-background: hsl(213 75% 6%);    /* Even darker navy */
+    /* PANÉTA Sidebar Dark - Royal Blue */
+    --sidebar-background: hsl(225 73% 45%);    /* Darker Royal Blue */
     --sidebar-foreground: hsl(0 0% 100%);
     --sidebar-primary: hsl(43 65% 52%);       /* Gold */
     --sidebar-primary-foreground: hsl(220 14% 16%);
-    --sidebar-accent: hsl(217 85% 40%);       /* Primary Blue */
+    --sidebar-accent: hsl(225 60% 35%);       /* Even Darker Royal Blue */
     --sidebar-accent-foreground: hsl(0 0% 100%);
-    --sidebar-border: hsl(213 50% 15%);
+    --sidebar-border: hsl(225 60% 40%);
     --sidebar-ring: hsl(43 65% 52%);
-    --sidebar: hsl(213 75% 6%);
+    --sidebar: hsl(225 73% 45%);
 }
 
 @layer base {
