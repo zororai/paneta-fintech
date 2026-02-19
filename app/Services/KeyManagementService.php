@@ -271,6 +271,20 @@ class KeyManagementService
         return Str::random(64);
     }
 
+    /**
+     * Get the signing key for digital instruction signing
+     */
+    public function getSigningKey(): string
+    {
+        $currentKey = $this->getCurrentKey(KeyRotation::KEY_TYPE_INSTRUCTION);
+        
+        if ($currentKey) {
+            return $this->getSecretForKey($currentKey);
+        }
+
+        return config('paneta.instruction_secret', config('app.key'));
+    }
+
     protected function getSecretForKey(KeyRotation $key): string
     {
         return config("paneta.keys.{$key->key_type}.v{$key->version}", config('paneta.instruction_secret'));

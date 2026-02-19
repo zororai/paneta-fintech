@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,21 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { BreadcrumbItem } from '@/types';
 import { 
     PieChart, 
@@ -21,9 +36,30 @@ import {
     Globe, 
     BarChart3,
     AlertTriangle,
-    Eye
+    Eye,
+    RefreshCw,
+    Unlink,
+    Key,
+    ChevronDown,
+    Building2,
+    CheckCircle,
+    Wallet,
+    DollarSign
 } from 'lucide-vue-next';
 import { ref } from 'vue';
+
+interface LinkedInstitution {
+    id: number;
+    name: string;
+    type: string;
+    status: 'connected' | 'expired' | 'error';
+    last_synced: string;
+    account_count: number;
+    institution: {
+        name: string;
+        logo_url: string | null;
+    };
+}
 
 interface Holding {
     symbol: string;
@@ -56,7 +92,7 @@ interface Analytics {
 }
 
 const props = defineProps<{
-    brokerAccounts: any[];
+    linkedInstitutions: LinkedInstitution[];
     holdings: HoldingGroup[];
     analytics: Analytics;
     isReadOnly: boolean;
@@ -64,10 +100,13 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'PANÉTA', href: '/paneta' },
-    { title: 'Wealth Management' },
+    { title: 'Wealth Dashboard' },
 ];
 
 const selectedPeriod = ref('YTD');
+const showBreakdownDialog = ref(false);
+const selectedInstitution = ref<LinkedInstitution | null>(null);
+const refreshing = ref<number | null>(null);
 
 const formatCurrency = (amount: number, currency: string = 'USD') => {
     return new Intl.NumberFormat('en-US', {
@@ -87,22 +126,65 @@ const getRiskColor = (score: number) => {
     return 'text-red-600';
 };
 
+const getRiskLabel = (score: number) => {
+    if (score <= 3) return 'Low Risk';
+    if (score <= 6) return 'Moderate Risk';
+    return 'High Risk';
+};
+
 const getReturnColor = (value: number) => {
     return value >= 0 ? 'text-green-600' : 'text-red-600';
+};
+
+const getStatusBadge = (status: string) => {
+    switch (status) {
+        case 'connected':
+            return { class: 'bg-green-100 text-green-700', label: 'Connected' };
+        case 'expired':
+            return { class: 'bg-yellow-100 text-yellow-700', label: 'Expired' };
+        case 'error':
+            return { class: 'bg-red-100 text-red-700', label: 'Error' };
+        default:
+            return { class: 'bg-gray-100 text-gray-700', label: status };
+    }
+};
+
+const refreshInstitution = async (id: number) => {
+    refreshing.value = id;
+    router.post(`/paneta/accounts/${id}/refresh`, {}, {
+        onFinish: () => {
+            refreshing.value = null;
+        }
+    });
+};
+
+const disconnectInstitution = (id: number) => {
+    if (confirm('Are you sure you want to disconnect this institution? This action cannot be undone.')) {
+        router.delete(`/paneta/accounts/${id}`);
+    }
+};
+
+const reauthenticate = (id: number) => {
+    router.get(`/paneta/accounts/${id}/reauth`);
+};
+
+const viewBreakdown = (institution: LinkedInstitution) => {
+    selectedInstitution.value = institution;
+    showBreakdownDialog.value = true;
 };
 </script>
 
 <template>
-    <Head title="Wealth Management - PANÉTA" />
+    <Head title="Wealth Dashboard - PANÉTA" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-6">
             <!-- Header -->
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-2xl font-bold">Wealth Management</h1>
+                    <h1 class="text-2xl font-bold">Wealth Dashboard</h1>
                     <p class="text-muted-foreground">
-                        Portfolio overview and analytics (Read-Only)
+                        Aggregated view of your financial accounts (Read-Only)
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -127,56 +209,146 @@ const getReturnColor = (value: number) => {
                 </div>
             </div>
 
-            <!-- Portfolio Summary -->
+            <!-- Linked Accounts Section -->
+            <Card>
+                <CardHeader>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <CardTitle class="flex items-center gap-2">
+                                <Building2 class="h-5 w-5" />
+                                Linked Accounts ({{ linkedInstitutions.length }})
+                            </CardTitle>
+                            <CardDescription>Connected financial institutions</CardDescription>
+                        </div>
+                        <Button variant="outline" as-child>
+                            <a href="/paneta/accounts">
+                                Manage Accounts
+                            </a>
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div v-if="linkedInstitutions.length === 0" class="text-center py-8">
+                        <Building2 class="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                        <p class="text-muted-foreground">No accounts linked yet</p>
+                        <Button class="mt-4" as-child>
+                            <a href="/paneta/accounts">Link Your First Account</a>
+                        </Button>
+                    </div>
+                    <div v-else class="grid gap-3 md:grid-cols-2">
+                        <div
+                            v-for="institution in linkedInstitutions"
+                            :key="institution.id"
+                            class="flex items-center justify-between rounded-lg border p-4"
+                        >
+                            <div class="flex items-center gap-3">
+                                <div class="rounded-full bg-primary/10 p-2">
+                                    <Building2 class="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-medium">{{ institution.institution.name }}</span>
+                                        <Badge :class="getStatusBadge(institution.status).class" class="text-xs">
+                                            {{ getStatusBadge(institution.status).label }}
+                                        </Badge>
+                                    </div>
+                                    <p class="text-sm text-muted-foreground">
+                                        {{ institution.account_count }} account(s) • Last synced: {{ institution.last_synced }}
+                                    </p>
+                                </div>
+                            </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger as-child>
+                                    <Button variant="ghost" size="sm">
+                                        <ChevronDown class="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem @click="refreshInstitution(institution.id)">
+                                        <RefreshCw class="mr-2 h-4 w-4" />
+                                        Refresh
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem @click="viewBreakdown(institution)">
+                                        <Eye class="mr-2 h-4 w-4" />
+                                        View Breakdown
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                        v-if="institution.status === 'expired'"
+                                        @click="reauthenticate(institution.id)"
+                                    >
+                                        <Key class="mr-2 h-4 w-4" />
+                                        Re-authenticate
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem 
+                                        class="text-red-600"
+                                        @click="disconnectInstitution(institution.id)"
+                                    >
+                                        <Unlink class="mr-2 h-4 w-4" />
+                                        Disconnect
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <!-- Portfolio Summary - Key Metrics -->
             <div class="grid gap-4 md:grid-cols-4">
-                <Card>
+                <!-- Total Net Worth -->
+                <Card class="md:col-span-2">
                     <CardHeader class="pb-2">
-                        <CardDescription>Total Portfolio Value</CardDescription>
+                        <CardDescription class="flex items-center gap-1">
+                            <Wallet class="h-4 w-4" />
+                            Total Net Worth
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div class="text-2xl font-bold">
+                        <div class="text-3xl font-bold">
                             {{ formatCurrency(analytics.total_portfolio_value, analytics.base_currency) }}
                         </div>
+                        <p class="text-sm text-muted-foreground mt-1">
+                            Aggregated across {{ linkedInstitutions.length }} institution(s)
+                        </p>
                     </CardContent>
                 </Card>
 
+                <!-- Risk Score -->
                 <Card>
                     <CardHeader class="pb-2">
-                        <CardDescription>Risk Score</CardDescription>
+                        <CardDescription class="flex items-center gap-1">
+                            <Shield class="h-4 w-4" />
+                            Risk Score
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div class="flex items-center gap-2">
                             <span :class="['text-2xl font-bold', getRiskColor(analytics.risk_score)]">
                                 {{ analytics.risk_score }}/10
                             </span>
-                            <Shield :class="['h-5 w-5', getRiskColor(analytics.risk_score)]" />
                         </div>
+                        <p :class="['text-sm mt-1', getRiskColor(analytics.risk_score)]">
+                            {{ getRiskLabel(analytics.risk_score) }}
+                        </p>
                     </CardContent>
                 </Card>
 
+                <!-- FX Exposure Summary -->
                 <Card>
                     <CardHeader class="pb-2">
-                        <CardDescription>TWR (Time-Weighted Return)</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div class="flex items-center gap-2">
-                            <span :class="['text-2xl font-bold', getReturnColor(analytics.twr)]">
-                                {{ formatPercent(analytics.twr) }}
-                            </span>
-                            <TrendingUp v-if="analytics.twr >= 0" class="h-5 w-5 text-green-600" />
-                            <TrendingDown v-else class="h-5 w-5 text-red-600" />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader class="pb-2">
-                        <CardDescription>Volatility</CardDescription>
+                        <CardDescription class="flex items-center gap-1">
+                            <DollarSign class="h-4 w-4" />
+                            FX Exposure
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div class="text-2xl font-bold">
-                            {{ analytics.volatility.toFixed(1) }}%
+                            {{ analytics.currency_exposure.length }} currencies
                         </div>
+                        <p class="text-sm text-muted-foreground mt-1">
+                            {{ analytics.currency_exposure[0]?.currency }} dominant ({{ analytics.currency_exposure[0]?.percentage.toFixed(0) }}%)
+                        </p>
                     </CardContent>
                 </Card>
             </div>
@@ -358,6 +530,110 @@ const getReturnColor = (value: number) => {
                     </CardContent>
                 </Card>
             </div>
+
+            <!-- What Users CAN and CANNOT Do -->
+            <Card>
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2">
+                        <Shield class="h-5 w-5" />
+                        Platform Capabilities
+                    </CardTitle>
+                    <CardDescription>PANÉTA is a Read-Only Financial Data & Analytics Platform</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <div>
+                            <h4 class="font-medium text-green-600 mb-3 flex items-center gap-2">
+                                <CheckCircle class="h-4 w-4" />
+                                You CAN
+                            </h4>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex items-center gap-2">
+                                    <RefreshCw class="h-4 w-4 text-muted-foreground" />
+                                    Refresh account data
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <Unlink class="h-4 w-4 text-muted-foreground" />
+                                    Disconnect institutions
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <Key class="h-4 w-4 text-muted-foreground" />
+                                    Re-authenticate expired connections
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <Eye class="h-4 w-4 text-muted-foreground" />
+                                    View detailed breakdowns
+                                </li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-red-600 mb-3 flex items-center gap-2">
+                                <AlertTriangle class="h-4 w-4" />
+                                You CANNOT
+                            </h4>
+                            <ul class="space-y-2 text-sm text-muted-foreground">
+                                <li>Execute trades</li>
+                                <li>Move funds between accounts</li>
+                                <li>Change asset allocations</li>
+                                <li>Rebalance portfolios</li>
+                            </ul>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
+
+        <!-- View Breakdown Dialog -->
+        <Dialog v-model:open="showBreakdownDialog">
+            <DialogContent class="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Account Breakdown</DialogTitle>
+                    <DialogDescription v-if="selectedInstitution">
+                        {{ selectedInstitution.institution.name }} - Detailed View
+                    </DialogDescription>
+                </DialogHeader>
+                <div v-if="selectedInstitution" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="rounded-lg border p-4">
+                            <p class="text-sm text-muted-foreground">Status</p>
+                            <Badge :class="getStatusBadge(selectedInstitution.status).class" class="mt-1">
+                                {{ getStatusBadge(selectedInstitution.status).label }}
+                            </Badge>
+                        </div>
+                        <div class="rounded-lg border p-4">
+                            <p class="text-sm text-muted-foreground">Last Synced</p>
+                            <p class="font-medium mt-1">{{ selectedInstitution.last_synced }}</p>
+                        </div>
+                        <div class="rounded-lg border p-4">
+                            <p class="text-sm text-muted-foreground">Accounts</p>
+                            <p class="font-medium mt-1">{{ selectedInstitution.account_count }} linked</p>
+                        </div>
+                        <div class="rounded-lg border p-4">
+                            <p class="text-sm text-muted-foreground">Type</p>
+                            <p class="font-medium mt-1 capitalize">{{ selectedInstitution.type }}</p>
+                        </div>
+                    </div>
+                    <div class="rounded-lg bg-muted p-4">
+                        <p class="text-sm text-muted-foreground mb-2">Data Access</p>
+                        <div class="flex flex-wrap gap-2">
+                            <Badge variant="outline">Balances</Badge>
+                            <Badge variant="outline">Transactions</Badge>
+                            <Badge variant="outline">Holdings</Badge>
+                            <Badge variant="outline" class="text-blue-600">Read-Only</Badge>
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" @click="showBreakdownDialog = false">Close</Button>
+                    <Button 
+                        v-if="selectedInstitution" 
+                        @click="refreshInstitution(selectedInstitution.id); showBreakdownDialog = false"
+                    >
+                        <RefreshCw class="mr-2 h-4 w-4" />
+                        Refresh Now
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

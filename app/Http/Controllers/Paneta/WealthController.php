@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Paneta;
 
 use App\Http\Controllers\Controller;
 use App\Models\Institution;
+use App\Models\LinkedAccount;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,21 +15,97 @@ class WealthController extends Controller
     {
         $user = $request->user();
 
-        $brokerAccounts = $user->linkedAccounts()
-            ->with('institution')
-            ->whereHas('institution', fn($q) => $q->whereIn('type', ['broker', 'custodian']))
-            ->where('status', 'active')
-            ->get();
-
+        $linkedInstitutions = $this->getLinkedInstitutions($user);
         $mockHoldings = $this->getMockHoldings();
         $mockAnalytics = $this->getMockAnalytics();
 
         return Inertia::render('Paneta/Wealth', [
-            'brokerAccounts' => $brokerAccounts,
+            'linkedInstitutions' => $linkedInstitutions,
             'holdings' => $mockHoldings,
             'analytics' => $mockAnalytics,
             'isReadOnly' => true,
         ]);
+    }
+
+    private function getLinkedInstitutions($user): array
+    {
+        $accounts = $user->linkedAccounts()
+            ->with('institution')
+            ->where('status', 'active')
+            ->get()
+            ->groupBy('institution_id');
+
+        $institutions = [];
+        foreach ($accounts as $institutionId => $accountGroup) {
+            $firstAccount = $accountGroup->first();
+            $institution = $firstAccount->institution;
+            
+            $status = 'connected';
+            if ($firstAccount->consent_expires_at && $firstAccount->consent_expires_at->isPast()) {
+                $status = 'expired';
+            }
+
+            $institutions[] = [
+                'id' => $institutionId,
+                'name' => $institution->name ?? 'Unknown',
+                'type' => $institution->type ?? 'bank',
+                'status' => $status,
+                'last_synced' => $firstAccount->updated_at?->diffForHumans() ?? 'Never',
+                'account_count' => $accountGroup->count(),
+                'institution' => [
+                    'name' => $institution->name ?? 'Unknown Institution',
+                    'logo_url' => $institution->logo_url ?? null,
+                ],
+            ];
+        }
+
+        if (empty($institutions)) {
+            $institutions = $this->getMockLinkedInstitutions();
+        }
+
+        return $institutions;
+    }
+
+    private function getMockLinkedInstitutions(): array
+    {
+        return [
+            [
+                'id' => 1,
+                'name' => 'Bank of X',
+                'type' => 'bank',
+                'status' => 'connected',
+                'last_synced' => '2 hours ago',
+                'account_count' => 2,
+                'institution' => ['name' => 'Bank of X', 'logo_url' => null],
+            ],
+            [
+                'id' => 2,
+                'name' => 'ABC Broker',
+                'type' => 'broker',
+                'status' => 'connected',
+                'last_synced' => '1 hour ago',
+                'account_count' => 1,
+                'institution' => ['name' => 'ABC Broker', 'logo_url' => null],
+            ],
+            [
+                'id' => 3,
+                'name' => 'Global Fund Admin',
+                'type' => 'custodian',
+                'status' => 'connected',
+                'last_synced' => '30 minutes ago',
+                'account_count' => 3,
+                'institution' => ['name' => 'Global Fund Admin', 'logo_url' => null],
+            ],
+            [
+                'id' => 4,
+                'name' => 'Crypto Custodian',
+                'type' => 'crypto',
+                'status' => 'expired',
+                'last_synced' => '3 days ago',
+                'account_count' => 1,
+                'institution' => ['name' => 'Crypto Custodian', 'logo_url' => null],
+            ],
+        ];
     }
 
     private function getMockHoldings(): array

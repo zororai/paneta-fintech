@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Wallet, ArrowUpRight, Send, FileText, Shield, Users, ArrowRightLeft, TrendingUp } from 'lucide-vue-next';
+import { LayoutGrid, Wallet, ArrowUpRight, Send, FileText, Shield, Users, ArrowRightLeft, TrendingUp, Store, Handshake, Globe, QrCode } from 'lucide-vue-next';
 import NavFooter from '@/components/NavFooter.vue';
 import NavUser from '@/components/NavUser.vue';
 import {
@@ -53,6 +53,26 @@ const panetaNavItems: NavItem[] = [
         title: 'Wealth',
         href: '/paneta/wealth',
         icon: TrendingUp,
+    },
+    {
+        title: 'Payment Requests',
+        href: '/paneta/payment-requests',
+        icon: QrCode,
+    },
+    {
+        title: 'Merchant SoftPOS',
+        href: '/paneta/merchant',
+        icon: Store,
+    },
+    {
+        title: 'P2P FX Escrow',
+        href: '/paneta/p2p-escrow',
+        icon: Handshake,
+    },
+    {
+        title: 'FX Marketplace',
+        href: '/paneta/fx-marketplace',
+        icon: Globe,
     },
     {
         title: 'Audit Logs',
