@@ -38,6 +38,7 @@ class LinkedAccountController extends Controller
     {
         $validated = $request->validate([
             'institution_id' => ['required', 'exists:institutions,id'],
+            'account_number' => ['required', 'string', 'min:5', 'max:50'],
             'currency' => ['required', 'string', 'size:3'],
         ]);
 
@@ -47,25 +48,27 @@ class LinkedAccountController extends Controller
         // Check if already linked
         $existingAccount = $user->linkedAccounts()
             ->where('institution_id', $institution->id)
-            ->where('currency', $validated['currency'])
+            ->where('account_identifier', $validated['account_number'])
             ->where('status', 'active')
             ->first();
 
         if ($existingAccount) {
             return back()->withErrors([
-                'institution_id' => 'Account already linked for this institution and currency',
+                'account_number' => 'This account is already linked',
             ]);
         }
 
         $account = $this->consentService->completeConsent(
             $user,
             $institution,
-            $validated['currency']
+            $validated['currency'],
+            $validated['account_number']
         );
 
         $this->auditService->logAccountLinked($user, $account->id, [
             'institution_id' => $institution->id,
             'institution_name' => $institution->name,
+            'account_number' => $validated['account_number'],
             'currency' => $validated['currency'],
         ]);
 

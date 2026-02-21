@@ -4,7 +4,9 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { BreadcrumbItem, DashboardData, User } from '@/types';
-import { Wallet, ArrowUpRight, Clock, TrendingUp } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { router } from '@inertiajs/vue3';
+import { Wallet, ArrowUpRight, Clock, TrendingUp, QrCode, Plus } from 'lucide-vue-next';
 
 const props = defineProps<{
     dashboardData: DashboardData;
@@ -119,6 +121,69 @@ const getStatusColor = (status: string) => {
                     </CardContent>
                 </Card>
             </div>
+
+            <!-- Receive Money Section -->
+            <Card v-if="dashboardData.pending_payment_requests && dashboardData.pending_payment_requests.length > 0" class="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+                <CardHeader>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="rounded-full bg-blue-600 p-2">
+                                <QrCode class="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                                <CardTitle class="text-blue-900 dark:text-blue-100">Pending Payment Requests</CardTitle>
+                                <CardDescription class="text-blue-700 dark:text-blue-300">You have {{ dashboardData.pending_payment_requests.length }} active request(s) to receive money</CardDescription>
+                            </div>
+                        </div>
+                        <Button variant="outline" size="sm" @click="router.visit('/paneta/payment-requests')" class="border-blue-600 text-blue-600 hover:bg-blue-100">
+                            View All
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div class="space-y-3">
+                        <div
+                            v-for="request in dashboardData.pending_payment_requests"
+                            :key="request.id"
+                            class="flex items-center justify-between rounded-lg border border-blue-200 bg-white p-4 dark:border-blue-700 dark:bg-blue-900"
+                        >
+                            <div class="flex items-center gap-3">
+                                <div class="rounded-full bg-blue-100 p-2 dark:bg-blue-800">
+                                    <QrCode class="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                                </div>
+                                <div>
+                                    <p class="font-medium text-blue-900 dark:text-blue-100">
+                                        {{ formatCurrency(request.amount, request.currency) }}
+                                    </p>
+                                    <p class="text-sm text-blue-600 dark:text-blue-400">
+                                        {{ request.description || 'Payment Request' }} • {{ request.reference }}
+                                    </p>
+                                </div>
+                            </div>
+                            <Badge class="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                                {{ request.status }}
+                            </Badge>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <!-- Quick Action: Create Payment Request -->
+            <Card v-else class="border-dashed border-2 border-blue-300 bg-blue-50/50 dark:border-blue-700 dark:bg-blue-950/50">
+                <CardContent class="flex flex-col items-center justify-center py-12">
+                    <div class="rounded-full bg-blue-100 p-4 dark:bg-blue-900">
+                        <QrCode class="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <h3 class="mt-4 text-lg font-semibold text-blue-900 dark:text-blue-100">Receive Money</h3>
+                    <p class="mt-2 text-center text-sm text-blue-600 dark:text-blue-400">
+                        Create a payment request to receive money from anyone
+                    </p>
+                    <Button @click="router.visit('/paneta/payment-requests')" class="mt-4 bg-blue-600 hover:bg-blue-700">
+                        <Plus class="mr-2 h-4 w-4" />
+                        Create Payment Request
+                    </Button>
+                </CardContent>
+            </Card>
 
             <!-- Accounts & Transactions -->
             <div class="grid gap-6 lg:grid-cols-2">

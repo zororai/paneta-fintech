@@ -30,13 +30,14 @@ class ConsentService
     public function completeConsent(
         User $user,
         Institution $institution,
-        string $currency = 'USD'
+        string $currency = 'USD',
+        ?string $accountNumber = null
     ): LinkedAccount {
         // Generate mock consent token
         $consentToken = $this->generateConsentToken();
         
-        // Generate mock account identifier
-        $accountIdentifier = $this->generateAccountIdentifier($institution);
+        // Use provided account number or generate mock account identifier
+        $accountIdentifier = $accountNumber ?? $this->generateAccountIdentifier($institution);
         
         // Generate random mock balance
         $mockBalance = $this->generateMockBalance();

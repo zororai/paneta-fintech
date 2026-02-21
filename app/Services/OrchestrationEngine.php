@@ -183,11 +183,18 @@ class OrchestrationEngine
             ->limit(5)
             ->get();
 
+        $pendingPaymentRequests = $user->paymentRequests()
+            ->whereIn('status', ['pending', 'partially_fulfilled'])
+            ->latest()
+            ->limit(5)
+            ->get();
+
         return [
             'total_balance' => $totalBalance,
             'accounts' => $accounts,
             'accounts_by_currency' => $accountsGroupedByCurrency,
             'recent_transactions' => $recentTransactions,
+            'pending_payment_requests' => $pendingPaymentRequests,
             'last_refresh' => now()->toIso8601String(),
         ];
     }

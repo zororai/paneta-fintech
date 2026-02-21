@@ -55,6 +55,7 @@ const selectedInstitution = ref<number | null>(null);
 
 const form = useForm({
     institution_id: null as number | null,
+    account_number: '',
     currency: 'USD',
 });
 
@@ -128,6 +129,9 @@ const linkAccount = () => {
             showLinkDialog.value = false;
             selectedInstitution.value = null;
             form.reset();
+        },
+        onError: () => {
+            // Errors will be displayed inline
         },
     });
 };
@@ -227,6 +231,21 @@ const refreshConsent = (accountId: number) => {
                                 </div>
                             </div>
 
+                            <!-- Account Number Input -->
+                            <div v-if="selectedInstitution" class="space-y-3">
+                                <Label for="account_number">Account Number</Label>
+                                <Input
+                                    id="account_number"
+                                    v-model="form.account_number"
+                                    type="text"
+                                    placeholder="Enter your account number"
+                                    required
+                                />
+                                <p v-if="form.errors.account_number" class="text-sm text-destructive">
+                                    {{ form.errors.account_number }}
+                                </p>
+                            </div>
+
                             <!-- Currency Selection -->
                             <div v-if="selectedInstitution" class="space-y-3">
                                 <Label>Select Currency</Label>
@@ -257,7 +276,7 @@ const refreshConsent = (accountId: number) => {
                                 Cancel
                             </Button>
                             <Button
-                                :disabled="!selectedInstitution || form.processing"
+                                :disabled="!selectedInstitution || !form.account_number || form.processing"
                                 @click="linkAccount"
                             >
                                 <span v-if="form.processing">Linking...</span>
