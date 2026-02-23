@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class HandleAppearance
@@ -16,7 +17,15 @@ class HandleAppearance
      */
     public function handle(Request $request, Closure $next): Response
     {
-        View::share('appearance', $request->cookie('appearance') ?? 'system');
+        $appearance = $request->cookie('appearance') ?? 'system';
+        
+        // Share with Inertia for Vue components
+        Inertia::share('appearance', $appearance);
+        
+        // Share with Blade views using composer (avoids view not found error)
+        View::composer('*', function ($view) use ($appearance) {
+            $view->with('appearance', $appearance);
+        });
 
         return $next($request);
     }
