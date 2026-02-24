@@ -83,4 +83,7 @@ export interface AdminStats {
     pending_transactions: number;
     total_volume: number;
     today_volume: number;
+    total_fees_collected: number;
+    today_fees_collected: number;
+    platform_fee_rate: number;
 }

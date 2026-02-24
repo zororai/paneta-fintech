@@ -4,7 +4,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { BreadcrumbItem, AdminStats, TransactionIntent } from '@/types';
-import { Users, ArrowUpRight, CheckCircle, XCircle, DollarSign, TrendingUp } from 'lucide-vue-next';
+import { Users, ArrowUpRight, CheckCircle, XCircle, DollarSign, TrendingUp, Coins, Wallet } from 'lucide-vue-next';
 
 const props = defineProps<{
     stats: AdminStats;
@@ -63,6 +63,39 @@ const getStatusColor = (status: string) => {
                 <Badge variant="outline" class="text-sm">
                     Read-Only Access
                 </Badge>
+            </div>
+
+            <!-- Platform Fees Section -->
+            <div class="grid gap-4 md:grid-cols-2">
+                <Card class="border-accent/30 bg-gradient-to-br from-accent/5 to-accent/10">
+                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle class="text-sm font-medium">Total Platform Fees (0.99%)</CardTitle>
+                        <Coins class="h-4 w-4 text-accent" />
+                    </CardHeader>
+                    <CardContent>
+                        <div class="text-2xl font-bold text-accent-foreground">
+                            {{ formatCurrency(stats.total_fees_collected || 0) }}
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                            From {{ formatCurrency(stats.total_volume) }} total volume
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card class="border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
+                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle class="text-sm font-medium">Today's Fees Collected</CardTitle>
+                        <Wallet class="h-4 w-4 text-primary" />
+                    </CardHeader>
+                    <CardContent>
+                        <div class="text-2xl font-bold text-primary">
+                            {{ formatCurrency(stats.today_fees_collected || 0) }}
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                            From {{ formatCurrency(stats.today_volume) }} today's volume
+                        </p>
+                    </CardContent>
+                </Card>
             </div>
 
             <!-- Stats Grid -->

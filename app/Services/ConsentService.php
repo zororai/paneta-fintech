@@ -31,7 +31,9 @@ class ConsentService
         User $user,
         Institution $institution,
         string $currency = 'USD',
-        ?string $accountNumber = null
+        ?string $accountNumber = null,
+        ?string $accountHolderName = null,
+        ?string $country = null
     ): LinkedAccount {
         // Generate mock consent token
         $consentToken = $this->generateConsentToken();
@@ -45,7 +47,9 @@ class ConsentService
         return LinkedAccount::create([
             'user_id' => $user->id,
             'institution_id' => $institution->id,
+            'country' => $country,
             'account_identifier' => $accountIdentifier,
+            'account_holder_name' => $accountHolderName,
             'currency' => $currency,
             'mock_balance' => $mockBalance,
             'consent_token' => $consentToken,

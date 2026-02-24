@@ -14,7 +14,9 @@ class LinkedAccount extends Model
     protected $fillable = [
         'user_id',
         'institution_id',
+        'country',
         'account_identifier',
+        'account_holder_name',
         'currency',
         'mock_balance',
         'consent_token',

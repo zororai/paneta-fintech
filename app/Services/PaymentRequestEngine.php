@@ -49,10 +49,10 @@ class PaymentRequestEngine
         $paymentRequest->save();
 
         $this->auditService->log(
-            $user->id,
             'payment_request_created',
             'PaymentRequest',
             $paymentRequest->id,
+            $user,
             [
                 'amount' => $amount,
                 'currency' => $currency,
@@ -109,10 +109,10 @@ class PaymentRequestEngine
         $paymentRequest->recordPayment($paymentAmount);
 
         $this->auditService->log(
-            $payer->id,
             'payment_request_fulfilled',
             'PaymentRequest',
             $paymentRequest->id,
+            $payer,
             [
                 'amount_paid' => $paymentAmount,
                 'total_received' => $paymentRequest->amount_received,
@@ -137,10 +137,10 @@ class PaymentRequestEngine
         $paymentRequest->transitionTo('cancelled');
 
         $this->auditService->log(
-            $user->id,
             'payment_request_cancelled',
             'PaymentRequest',
             $paymentRequest->id,
+            $user,
             ['amount_received_before_cancel' => $paymentRequest->amount_received]
         );
 
