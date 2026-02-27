@@ -21,7 +21,8 @@ class OrchestrationEngine
         LinkedAccount $issuerAccount,
         string $acquirerIdentifier,
         float $amount,
-        string $currency
+        string $currency,
+        array $metadata = []
     ): TransactionIntentResult {
         // Validate ownership
         if ($issuerAccount->user_id !== $user->id) {
@@ -44,8 +45,8 @@ class OrchestrationEngine
             );
         }
 
-        // Create transaction intent
-        $intent = TransactionIntent::create([
+        // Create transaction intent with metadata
+        $intentData = [
             'user_id' => $user->id,
             'issuer_account_id' => $issuerAccount->id,
             'acquirer_identifier' => $acquirerIdentifier,
@@ -53,16 +54,38 @@ class OrchestrationEngine
             'currency' => $currency,
             'status' => 'pending',
             'reference' => TransactionIntent::generateReference(),
-        ]);
+        ];
 
-        // Log audit
-        $this->auditService->logTransactionCreated($user, $intent->id, [
+        // Add metadata fields if provided
+        if (!empty($metadata['description'])) {
+            $intentData['description'] = $metadata['description'];
+        }
+        if (!empty($metadata['destination_country'])) {
+            $intentData['destination_country'] = $metadata['destination_country'];
+        }
+        if (!empty($metadata['destination_institution_id'])) {
+            $intentData['destination_institution_id'] = $metadata['destination_institution_id'];
+        }
+        if (!empty($metadata['destination_currency'])) {
+            $intentData['destination_currency'] = $metadata['destination_currency'];
+        }
+
+        $intent = TransactionIntent::create($intentData);
+
+        // Log audit with metadata
+        $auditData = [
             'amount' => $amount,
             'currency' => $currency,
             'issuer_account_id' => $issuerAccount->id,
             'acquirer_identifier' => $acquirerIdentifier,
             'compliance_checks' => $complianceResult->checks,
-        ]);
+        ];
+
+        if (!empty($metadata)) {
+            $auditData['metadata'] = $metadata;
+        }
+
+        $this->auditService->logTransactionCreated($user, $intent->id, $auditData);
 
         return new TransactionIntentResult(
             success: true,

@@ -22,28 +22,41 @@ class MerchantController extends Controller
     {
         $user = $request->user();
         
-        $merchant = Merchant::where('user_id', $user->id)->first();
-        $devices = $merchant ? $merchant->devices()->get() : collect();
+        $merchants = Merchant::where('user_id', $user->id)->get();
         $linkedAccounts = LinkedAccount::where('user_id', $user->id)
             ->where('status', 'active')
             ->with('institution')
             ->get();
         
-        $recentPayments = [];
-        if ($merchant) {
-            $recentPayments = $merchant->payments()
-                ->latest()
-                ->take(10)
-                ->get()
-                ->toArray();
+        $allDevices = [];
+        $allPayments = [];
+        $totalStats = [
+            'total_transactions' => 0,
+            'total_volume' => 0,
+            'active_devices' => 0,
+            'today_transactions' => 0,
+        ];
+
+        foreach ($merchants as $merchant) {
+            $devices = $merchant->devices()->get();
+            $allDevices = array_merge($allDevices, $devices->toArray());
+            
+            $payments = $merchant->payments()->latest()->take(10)->get();
+            $allPayments = array_merge($allPayments, $payments->toArray());
+            
+            $stats = $this->getMerchantStats($merchant);
+            $totalStats['total_transactions'] += $stats['total_transactions'];
+            $totalStats['total_volume'] += $stats['total_volume'];
+            $totalStats['active_devices'] += $stats['active_devices'];
+            $totalStats['today_transactions'] += $stats['today_transactions'];
         }
 
         return Inertia::render('Paneta/Merchant', [
-            'merchant' => $merchant,
-            'devices' => $devices,
+            'merchants' => $merchants,
+            'devices' => $allDevices,
             'linkedAccounts' => $linkedAccounts,
-            'recentPayments' => $recentPayments,
-            'stats' => $this->getMerchantStats($merchant),
+            'recentPayments' => $allPayments,
+            'stats' => $totalStats,
         ]);
     }
 
@@ -51,9 +64,16 @@ class MerchantController extends Controller
     {
         $validated = $request->validate([
             'business_name' => 'required|string|max:255',
-            'business_registration_number' => 'nullable|string|max:100',
             'business_type' => 'nullable|string|max:100',
+            'business_registration_number' => 'nullable|string|max:100',
+            'business_sector' => 'nullable|string|max:100',
             'country' => 'required|string|size:2',
+            'business_logo' => 'nullable|string|max:500',
+            'tax_id' => 'nullable|string|max:100',
+            'reporting_currency' => 'nullable|string|size:3',
+            'settlement_account_id' => 'nullable|exists:linked_accounts,id',
+            'other_settlement_accounts' => 'nullable|array',
+            'other_settlement_accounts.*' => 'exists:linked_accounts,id',
         ]);
 
         $merchant = $this->merchantEngine->registerMerchant(
@@ -61,10 +81,16 @@ class MerchantController extends Controller
             businessName: $validated['business_name'],
             businessRegistrationNumber: $validated['business_registration_number'] ?? null,
             businessType: $validated['business_type'] ?? null,
-            country: $validated['country']
+            businessSector: $validated['business_sector'] ?? null,
+            country: $validated['country'],
+            taxId: $validated['tax_id'] ?? null,
+            businessLogo: $validated['business_logo'] ?? null,
+            reportingCurrency: $validated['reporting_currency'] ?? null,
+            settlementAccountId: $validated['settlement_account_id'] ?? null,
+            otherSettlementAccounts: $validated['other_settlement_accounts'] ?? null
         );
 
-        return back()->with('success', 'Merchant registration submitted for verification.');
+        return back()->with('success', 'Business registered successfully.');
     }
 
     public function setSettlementAccount(Request $request, Merchant $merchant)

@@ -19,6 +19,10 @@ class TransactionIntent extends Model
         'currency',
         'status',
         'reference',
+        'description',
+        'destination_country',
+        'destination_institution_id',
+        'destination_currency',
     ];
 
     protected function casts(): array
@@ -36,6 +40,11 @@ class TransactionIntent extends Model
     public function issuerAccount(): BelongsTo
     {
         return $this->belongsTo(LinkedAccount::class, 'issuer_account_id');
+    }
+
+    public function destinationInstitution(): BelongsTo
+    {
+        return $this->belongsTo(Institution::class, 'destination_institution_id');
     }
 
     public function paymentInstruction(): HasOne

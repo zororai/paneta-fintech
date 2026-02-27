@@ -496,9 +496,6 @@ const viewStatements = (account: LinkedAccount) => {
                                             <span>Receive real-time account updates</span>
                                         </li>
                                     </ul>
-                                    <p class="text-xs text-muted-foreground mt-3">
-                                        This consent is valid for 90 days and can be revoked at any time.
-                                    </p>
 
                                     <div class="flex items-center gap-2 mt-4 p-3 bg-primary/5 rounded-md">
                                         <input
@@ -725,11 +722,6 @@ const viewStatements = (account: LinkedAccount) => {
                                     {{ selectedAccount.status }}
                                 </Badge>
                             </div>
-                        </div>
-
-                        <div class="grid grid-cols-3 gap-2 p-3 border rounded-lg">
-                            <div class="text-sm text-muted-foreground">Consent Expires</div>
-                            <div class="col-span-2 font-medium">{{ formatDate(selectedAccount.consent_expires_at) }}</div>
                         </div>
 
                         <div class="grid grid-cols-3 gap-2 p-3 border rounded-lg">

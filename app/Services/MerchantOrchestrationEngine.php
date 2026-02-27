@@ -21,14 +21,26 @@ class MerchantOrchestrationEngine
         string $businessName,
         ?string $businessRegistrationNumber = null,
         ?string $businessType = null,
-        string $country = 'ZA'
+        ?string $businessSector = null,
+        string $country = 'ZA',
+        ?string $taxId = null,
+        ?string $businessLogo = null,
+        ?string $reportingCurrency = null,
+        ?int $settlementAccountId = null,
+        ?array $otherSettlementAccounts = null
     ): Merchant {
         $merchant = Merchant::create([
             'user_id' => $user->id,
             'business_name' => $businessName,
             'business_registration_number' => $businessRegistrationNumber,
             'business_type' => $businessType,
+            'business_sector' => $businessSector,
             'country' => $country,
+            'tax_id' => $taxId,
+            'business_logo' => $businessLogo,
+            'reporting_currency' => $reportingCurrency,
+            'settlement_account_id' => $settlementAccountId,
+            'other_settlement_accounts' => $otherSettlementAccounts,
             'kyb_status' => 'pending',
             'is_active' => false,
         ]);

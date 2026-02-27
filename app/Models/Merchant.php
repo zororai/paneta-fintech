@@ -16,10 +16,15 @@ class Merchant extends Model
         'business_name',
         'business_registration_number',
         'business_type',
+        'business_sector',
         'country',
+        'tax_id',
+        'business_logo',
         'kyb_status',
         'default_currency',
+        'reporting_currency',
         'settlement_account_id',
+        'other_settlement_accounts',
         'transaction_fee_percentage',
         'is_active',
         'metadata',
@@ -29,6 +34,7 @@ class Merchant extends Model
         'transaction_fee_percentage' => 'decimal:4',
         'is_active' => 'boolean',
         'metadata' => 'array',
+        'other_settlement_accounts' => 'array',
     ];
 
     public function user(): BelongsTo
@@ -44,6 +50,11 @@ class Merchant extends Model
     public function devices(): HasMany
     {
         return $this->hasMany(MerchantDevice::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(PaymentRequest::class, 'user_id', 'user_id');
     }
 
     public function isVerified(): bool
