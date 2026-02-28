@@ -8,6 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -149,7 +156,7 @@ const selectQuote = (quote: FxQuote) => {
     selectedQuote.value = quote;
 };
 
-const confirmExchange = () => {
+const confirmQuoteExchange = () => {
     if (!selectedQuote.value) return;
     alert('FX instruction generated. Note: PANÉTA does not execute trades - this generates a signed instruction for external execution.');
 };
@@ -178,6 +185,26 @@ const formatTimeAgo = (date: string) => {
     if (diff < 60) return `${diff} mins ago`;
     if (diff < 1440) return `${Math.floor(diff / 60)} hours ago`;
     return `${Math.floor(diff / 1440)} days ago`;
+};
+
+// Exchange confirmation dialog state
+const showExchangeDialog = ref(false);
+const selectedProvider = ref<Institution | null>(null);
+
+const openExchangeDialog = (provider: Institution) => {
+    selectedProvider.value = provider;
+    showExchangeDialog.value = true;
+};
+
+const closeExchangeDialog = () => {
+    showExchangeDialog.value = false;
+    selectedProvider.value = null;
+};
+
+const confirmExchange = () => {
+    // TODO: Implement exchange confirmation logic
+    alert('Exchange confirmed! This will be implemented in the next stage.');
+    closeExchangeDialog();
 };
 </script>
 
@@ -561,23 +588,117 @@ const formatTimeAgo = (date: string) => {
                 </TabsContent>
 
                 <!-- FX Marketplace Tab -->
-                <TabsContent value="fx-marketplace" class="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle class="flex items-center gap-2">
-                                <Globe class="h-5 w-5" />
-                                FX Marketplace
-                            </CardTitle>
-                            <CardDescription>
-                                Access institutional-grade FX marketplace with competitive rates
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div class="flex flex-col items-center justify-center py-12 text-center">
-                                <Globe class="mb-4 h-12 w-12 text-muted-foreground" />
-                                <p class="text-muted-foreground">
-                                    FX Marketplace functionality coming soon
-                                </p>
+                <TabsContent value="fx-marketplace" class="space-y-4">
+                    <!-- Header matching P2P format -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <Globe class="h-6 w-6 text-primary" />
+                            <h2 class="text-2xl font-bold">FX Marketplace</h2>
+                            <Badge variant="default" class="bg-green-600">{{ fxProviders?.length || 0 }} Providers</Badge>
+                        </div>
+                        <Button variant="outline" size="sm">
+                            <RefreshCw class="mr-2 h-4 w-4" />
+                            Refresh Rates
+                        </Button>
+                    </div>
+
+                    <!-- FX Provider Cards -->
+                    <div class="space-y-3">
+                        <Card 
+                            v-for="provider in fxProviders" 
+                            :key="provider.id"
+                            class="hover:shadow-lg transition-all"
+                        >
+                            <CardContent class="p-5">
+                                <div class="flex items-start justify-between gap-6">
+                                    <!-- Provider Info -->
+                                    <div class="flex items-start gap-4 flex-1">
+                                        <!-- Logo -->
+                                        <div class="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-purple-700 text-white font-bold text-2xl shadow-md">
+                                            {{ provider.name.split(' ').map(n => n[0]).join('').substring(0, 3).toUpperCase() }}
+                                        </div>
+
+                                        <div class="flex-1 space-y-2">
+                                            <!-- Name and verification -->
+                                            <div class="flex items-center gap-2">
+                                                <h3 class="font-semibold text-lg">{{ provider.name }}</h3>
+                                                <svg class="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                </svg>
+                                                <span class="text-yellow-500 font-semibold text-sm">★ 4.9</span>
+                                            </div>
+
+                                            <!-- Type and Location -->
+                                            <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <span class="font-medium">{{ provider.type || 'Financial Institution' }}</span>
+                                                <span>•</span>
+                                                <span>{{ provider.country || 'London, UK' }}</span>
+                                            </div>
+
+                                            <p class="text-sm text-muted-foreground">
+                                                Daily Volume: $500M+
+                                            </p>
+
+                                            <!-- Licenses -->
+                                            <div class="flex gap-2 mt-2">
+                                                <Badge variant="outline" class="text-xs bg-blue-50 text-blue-700 border-blue-200">FCA</Badge>
+                                                <Badge variant="outline" class="text-xs bg-blue-50 text-blue-700 border-blue-200">PRA</Badge>
+                                            </div>
+
+                                            <!-- FX Services & Features -->
+                                            <div class="mt-3 space-y-1">
+                                                <p class="text-xs font-semibold text-muted-foreground">FX Services & Features:</p>
+                                                <div class="flex flex-wrap gap-2">
+                                                    <Badge variant="secondary" class="text-xs">Large Volume</Badge>
+                                                    <Badge variant="secondary" class="text-xs">Corporate</Badge>
+                                                    <Badge variant="secondary" class="text-xs">Instant Settlement</Badge>
+                                                </div>
+                                            </div>
+
+                                            <!-- Contact Information -->
+                                            <div class="mt-2 text-xs text-muted-foreground">
+                                                <p><span class="font-semibold">Contact:</span> support@{{ provider.name.toLowerCase().replace(/\s+/g, '') }}.com</p>
+                                                <p><span class="font-semibold">Member since:</span> 2020</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Exchange Rate & Actions -->
+                                    <div class="flex flex-col items-end gap-3 min-w-[280px]">
+                                        <!-- Rate Info -->
+                                        <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-4 w-full border border-purple-100">
+                                            <div class="text-right space-y-1">
+                                                <div class="text-sm text-muted-foreground">Exchange Rate</div>
+                                                <div class="text-2xl font-bold text-purple-900">0.8534</div>
+                                                <div class="text-xs text-purple-700">Processing Fee: 0.15%</div>
+                                                <div class="text-xs text-purple-700">Processing Time: 15 min</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Start Exchange Button -->
+                                        <Button size="sm" class="w-full bg-purple-600 hover:bg-purple-700 text-white shadow-md" @click="openExchangeDialog(provider)">
+                                            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                            </svg>
+                                            Start Exchange
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <!-- Disclaimer Footer -->
+                    <Card class="bg-amber-50 border-amber-200">
+                        <CardContent class="p-4">
+                            <div class="flex gap-3">
+                                <svg class="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                                <div class="text-xs text-amber-900 space-y-1">
+                                    <p class="font-semibold">Important Disclaimer</p>
+                                    <p>PANÉTA operates as a zero-custody platform and does not hold, transfer, or execute foreign exchange transactions. All FX operations are conducted directly between users and licensed FX providers. PANÉTA generates cryptographically signed instructions that users present to their chosen providers for execution. Users are responsible for verifying provider credentials, understanding exchange terms, and ensuring compliance with applicable regulations. Exchange rates, fees, and processing times are indicative and subject to change. Past performance does not guarantee future results.</p>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
