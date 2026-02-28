@@ -50,7 +50,7 @@ const panetaNavItems: NavItem[] = [
         icon: ArrowRightLeft,
     },
     {
-        title: 'Wealth',
+        title: 'Wealth & Investments',
         href: '/paneta/wealth',
         icon: TrendingUp,
     },

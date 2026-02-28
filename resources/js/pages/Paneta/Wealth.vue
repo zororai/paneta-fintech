@@ -4,6 +4,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Table,
     TableBody,
@@ -44,7 +45,12 @@ import {
     Building2,
     CheckCircle,
     Wallet,
-    DollarSign
+    DollarSign,
+    Plus,
+    ExternalLink,
+    Sparkles,
+    Target,
+    Activity
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 
@@ -69,6 +75,7 @@ interface Holding {
     market_value: number;
     allocation_pct: number;
     sector: string;
+    financial_market: string;
     region: string;
 }
 
@@ -100,13 +107,21 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'PANÉTA', href: '/paneta' },
-    { title: 'Wealth Dashboard' },
+    { title: 'Wealth & Investments' },
 ];
 
 const selectedPeriod = ref('YTD');
 const showBreakdownDialog = ref(false);
 const selectedInstitution = ref<LinkedInstitution | null>(null);
 const refreshing = ref<number | null>(null);
+const showTiersDialog = ref(false);
+const showScenarioDialog = ref(false);
+
+const currentTier = {
+    name: 'Silver Tier',
+    subtitle: 'Retail Investors Mode',
+    price: 'Free'
+};
 
 const formatCurrency = (amount: number, currency: string = 'USD') => {
     return new Intl.NumberFormat('en-US', {
@@ -175,16 +190,16 @@ const viewBreakdown = (institution: LinkedInstitution) => {
 </script>
 
 <template>
-    <Head title="Wealth Dashboard - PANÉTA" />
+    <Head title="Wealth & Investments - PANÉTA" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-6">
             <!-- Header -->
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-2xl font-bold">Wealth Dashboard</h1>
+                    <h1 class="text-2xl font-bold">Wealth & Investments</h1>
                     <p class="text-muted-foreground">
-                        Aggregated view of your financial accounts (Read-Only)
+                        Manage your portfolio, access global markets, and integrate with financial institutions
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -198,19 +213,59 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                 </div>
             </div>
 
-            <!-- Warning Banner -->
-            <div class="flex items-center gap-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
-                <AlertTriangle class="h-5 w-5 text-yellow-600" />
-                <div>
-                    <p class="font-medium text-yellow-600">Decision Support Only</p>
-                    <p class="text-sm text-muted-foreground">
-                        This module is read-only. PANÉTA does not execute trades, rebalance portfolios, or hold any assets.
-                    </p>
-                </div>
-            </div>
+            <!-- Horizontal Tabs -->
+            <Tabs default-value="portfolio" class="space-y-6">
+                <TabsList class="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+                    <TabsTrigger value="portfolio" class="gap-2">
+                        <PieChart class="h-4 w-4" />
+                        Portfolio Management
+                    </TabsTrigger>
+                    <TabsTrigger value="markets" class="gap-2">
+                        <Globe class="h-4 w-4" />
+                        Global Financial Markets
+                    </TabsTrigger>
+                    <TabsTrigger value="integration" class="gap-2">
+                        <BarChart3 class="h-4 w-4" />
+                        Market Integration
+                    </TabsTrigger>
+                </TabsList>
 
-            <!-- Linked Accounts Section -->
-            <Card>
+                <!-- Portfolio Management Tab -->
+                <TabsContent value="portfolio" class="space-y-6">
+                    <!-- Subscription Tier & Connect Asset Bar -->
+                    <div class="flex items-center justify-between">
+                        <Button 
+                            variant="outline" 
+                            class="gap-2 border-purple-200 bg-purple-50 hover:bg-purple-100"
+                            @click="showTiersDialog = true"
+                        >
+                            <svg class="h-4 w-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                            </svg>
+                            <div class="text-left">
+                                <div class="font-semibold text-purple-900">{{ currentTier.name }}: {{ currentTier.subtitle }}</div>
+                                <div class="text-xs text-purple-600">({{ currentTier.price }})</div>
+                            </div>
+                        </Button>
+                        <Button class="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                            <Plus class="h-4 w-4" />
+                            Connect New Asset
+                        </Button>
+                    </div>
+
+                    <!-- Warning Banner -->
+                    <div class="flex items-center gap-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
+                        <AlertTriangle class="h-5 w-5 text-yellow-600" />
+                        <div>
+                            <p class="font-medium text-yellow-600">Decision Support Only</p>
+                            <p class="text-sm text-muted-foreground">
+                                This module is read-only. PANÉTA does not execute trades, rebalance portfolios, or hold any assets.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Linked Accounts Section -->
+                    <Card>
                 <CardHeader>
                     <div class="flex items-center justify-between">
                         <div>
@@ -292,10 +347,10 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                         </div>
                     </div>
                 </CardContent>
-            </Card>
+                    </Card>
 
-            <!-- Portfolio Summary - Key Metrics -->
-            <div class="grid gap-4 md:grid-cols-4">
+                    <!-- Portfolio Summary - Key Metrics -->
+                    <div class="grid gap-4 md:grid-cols-4">
                 <!-- Total Net Worth -->
                 <Card class="md:col-span-2">
                     <CardHeader class="pb-2">
@@ -351,10 +406,10 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                         </p>
                     </CardContent>
                 </Card>
-            </div>
+                    </div>
 
-            <!-- Performance & Allocation -->
-            <div class="grid gap-6 lg:grid-cols-2">
+                    <!-- Performance & Allocation -->
+                    <div class="grid gap-6 lg:grid-cols-2">
                 <!-- Performance Metrics -->
                 <Card>
                     <CardHeader>
@@ -419,10 +474,10 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                         </div>
                     </CardContent>
                 </Card>
-            </div>
+                    </div>
 
-            <!-- Holdings Breakdown -->
-            <Card>
+                    <!-- Holdings Breakdown -->
+                    <Card>
                 <CardHeader>
                     <CardTitle>Holdings Breakdown</CardTitle>
                     <CardDescription>
@@ -443,7 +498,9 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                                         <TableHead class="text-right">Market Value</TableHead>
                                         <TableHead class="text-right">Allocation</TableHead>
                                         <TableHead>Sector</TableHead>
+                                        <TableHead>Financial Market</TableHead>
                                         <TableHead>Region</TableHead>
+                                        <TableHead class="text-right">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -458,7 +515,16 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                                             <Badge variant="outline">{{ holding.sector }}</Badge>
                                         </TableCell>
                                         <TableCell>
+                                            <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-200">{{ holding.financial_market }}</Badge>
+                                        </TableCell>
+                                        <TableCell>
                                             <Badge variant="secondary">{{ holding.region }}</Badge>
+                                        </TableCell>
+                                        <TableCell class="text-right">
+                                            <Button size="sm" variant="outline" class="gap-1">
+                                                <ExternalLink class="h-3 w-3" />
+                                                Trade
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 </TableBody>
@@ -466,10 +532,10 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                         </div>
                     </div>
                 </CardContent>
-            </Card>
+                    </Card>
 
-            <!-- Exposure Analysis -->
-            <div class="grid gap-6 lg:grid-cols-3">
+                    <!-- Exposure Analysis -->
+                    <div class="grid gap-6 lg:grid-cols-3">
                 <!-- Currency Exposure -->
                 <Card>
                     <CardHeader>
@@ -529,10 +595,10 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                         </div>
                     </CardContent>
                 </Card>
-            </div>
+                    </div>
 
-            <!-- What Users CAN and CANNOT Do -->
-            <Card>
+                    <!-- What Users CAN and CANNOT Do -->
+                    <Card>
                 <CardHeader>
                     <CardTitle class="flex items-center gap-2">
                         <Shield class="h-5 w-5" />
@@ -581,10 +647,9 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                     </div>
                 </CardContent>
             </Card>
-        </div>
 
-        <!-- View Breakdown Dialog -->
-        <Dialog v-model:open="showBreakdownDialog">
+                    <!-- Breakdown Dialog -->
+                    <Dialog v-model:open="showBreakdownDialog">
             <DialogContent class="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Account Breakdown</DialogTitle>
@@ -635,5 +700,56 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+                </TabsContent>
+
+                <!-- Global Financial Markets Tab -->
+                <TabsContent value="markets" class="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <Globe class="h-5 w-5" />
+                                Global Financial Markets
+                            </CardTitle>
+                            <CardDescription>
+                                Access real-time market data and global investment opportunities
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="flex flex-col items-center justify-center py-12 text-center">
+                                <Globe class="mb-4 h-12 w-12 text-muted-foreground" />
+                                <p class="text-lg font-medium">Global Financial Markets</p>
+                                <p class="text-muted-foreground mt-2">
+                                    Market data and investment opportunities coming soon
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <!-- Market Integration Tab -->
+                <TabsContent value="integration" class="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <BarChart3 class="h-5 w-5" />
+                                Market Integration
+                            </CardTitle>
+                            <CardDescription>
+                                Connect and integrate with financial markets and institutions
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="flex flex-col items-center justify-center py-12 text-center">
+                                <BarChart3 class="mb-4 h-12 w-12 text-muted-foreground" />
+                                <p class="text-lg font-medium">Market Integration</p>
+                                <p class="text-muted-foreground mt-2">
+                                    Integration features coming soon
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
     </AppLayout>
 </template>

@@ -160,6 +160,7 @@ Route::middleware(['auth', 'verified'])->prefix('paneta')->name('paneta.')->grou
     Route::get('/fx-marketplace', [FXMarketplaceController::class, 'index'])->name('fx-marketplace.index');
     Route::get('/fx-marketplace/order-book', [FXMarketplaceController::class, 'getOrderBook'])->name('fx-marketplace.order-book');
     Route::post('/fx-marketplace/offers/{offer}/take', [FXMarketplaceController::class, 'takeOffer'])->name('fx-marketplace.offers.take');
+    Route::post('/fx-marketplace/execute', [FXMarketplaceController::class, 'executeExchange'])->name('fx-marketplace.execute');
 
     // Demo Simulation (for testing)
     Route::get('/demo/status', [DemoController::class, 'status'])->name('demo.status');

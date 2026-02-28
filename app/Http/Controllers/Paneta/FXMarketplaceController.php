@@ -130,4 +130,88 @@ class FXMarketplaceController extends Controller
 
         return back()->withErrors(['error' => $executionResult->error]);
     }
+
+    public function executeExchange(Request $request)
+    {
+        $validated = $request->validate([
+            'provider_id' => 'required|exists:institutions,id',
+            'source_account_id' => 'required|exists:linked_accounts,id',
+            'destination_account_id' => 'required|exists:linked_accounts,id',
+            'source_currency' => 'required|string|size:3',
+            'destination_currency' => 'required|string|size:3',
+            'amount' => 'required|numeric|min:1',
+            'settlement_preference' => 'required|string|in:instant,standard,economy',
+        ]);
+
+        $user = $request->user();
+
+        // Validate account ownership
+        $sourceAccount = LinkedAccount::findOrFail($validated['source_account_id']);
+        $destinationAccount = LinkedAccount::findOrFail($validated['destination_account_id']);
+
+        if ($sourceAccount->user_id !== $user->id || $destinationAccount->user_id !== $user->id) {
+            return back()->withErrors(['error' => 'Accounts do not belong to you']);
+        }
+
+        // Calculate exchange rate and fees
+        $exchangeRate = $this->calculateExchangeRate($validated['source_currency'], $validated['destination_currency']);
+        $destinationAmount = $validated['amount'] * $exchangeRate;
+        $panetaFee = $validated['amount'] * 0.0099;
+        $providerFee = $validated['amount'] * 0.002;
+        $totalFees = $panetaFee + $providerFee;
+        $netAmount = $validated['amount'] + $totalFees;
+
+        // Create FX transaction record
+        $fxTransaction = \App\Models\FxTransaction::create([
+            'user_id' => $user->id,
+            'provider_id' => $validated['provider_id'],
+            'source_account_id' => $validated['source_account_id'],
+            'destination_account_id' => $validated['destination_account_id'],
+            'source_currency' => $validated['source_currency'],
+            'destination_currency' => $validated['destination_currency'],
+            'source_amount' => $validated['amount'],
+            'exchange_rate' => $exchangeRate,
+            'destination_amount' => $destinationAmount,
+            'paneta_fee' => $panetaFee,
+            'provider_fee' => $providerFee,
+            'total_fees' => $totalFees,
+            'net_amount_debited' => $netAmount,
+            'settlement_preference' => $validated['settlement_preference'],
+            'status' => 'pending',
+            'transaction_type' => 'fx_marketplace',
+        ]);
+
+        // Audit log
+        $this->auditService->log(
+            'fx_marketplace_exchange_initiated',
+            'fx_transaction',
+            $fxTransaction->id,
+            $user,
+            [
+                'provider_id' => $validated['provider_id'],
+                'source_currency' => $validated['source_currency'],
+                'destination_currency' => $validated['destination_currency'],
+                'amount' => $validated['amount'],
+                'exchange_rate' => $exchangeRate,
+            ]
+        );
+
+        return back()->with('success', 'Exchange initiated successfully! Transaction ID: ' . $fxTransaction->id);
+    }
+
+    private function calculateExchangeRate(string $from, string $to): float
+    {
+        // Mock exchange rate calculation
+        $rates = [
+            'USD-EUR' => 0.85,
+            'EUR-USD' => 1.18,
+            'USD-GBP' => 0.79,
+            'GBP-USD' => 1.27,
+            'USD-ZAR' => 18.5,
+            'ZAR-USD' => 0.054,
+        ];
+        
+        $key = "$from-$to";
+        return $rates[$key] ?? 1.0;
+    }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -187,25 +187,89 @@ const formatTimeAgo = (date: string) => {
     return `${Math.floor(diff / 1440)} days ago`;
 };
 
-// Exchange confirmation dialog state
+// FX Intent form state
+const showIntentDialog = ref(false);
 const showExchangeDialog = ref(false);
 const selectedProvider = ref<Institution | null>(null);
 
-const openExchangeDialog = (provider: Institution) => {
+const exchangeForm = useForm({
+    provider_id: null as number | null,
+    source_account_id: null as number | null,
+    destination_account_id: null as number | null,
+    source_currency: 'USD',
+    destination_currency: 'EUR',
+    amount: 1000,
+    settlement_preference: 'instant',
+});
+
+const openIntentDialog = (provider: Institution) => {
     selectedProvider.value = provider;
+    exchangeForm.provider_id = provider.id;
+    showIntentDialog.value = true;
+};
+
+const closeIntentDialog = () => {
+    showIntentDialog.value = false;
+};
+
+const proceedToConfirmation = () => {
+    if (!exchangeForm.source_account_id || !exchangeForm.destination_account_id || !exchangeForm.amount) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    showIntentDialog.value = false;
     showExchangeDialog.value = true;
 };
 
 const closeExchangeDialog = () => {
     showExchangeDialog.value = false;
-    selectedProvider.value = null;
+};
+
+const goBackToIntent = () => {
+    showExchangeDialog.value = false;
+    showIntentDialog.value = true;
 };
 
 const confirmExchange = () => {
-    // TODO: Implement exchange confirmation logic
-    alert('Exchange confirmed! This will be implemented in the next stage.');
-    closeExchangeDialog();
+    exchangeForm.post('/paneta/fx-marketplace/execute', {
+        onSuccess: () => {
+            showExchangeDialog.value = false;
+            showIntentDialog.value = false;
+            selectedProvider.value = null;
+            exchangeForm.reset();
+        },
+        onError: (errors) => {
+            console.error('Exchange failed:', errors);
+        },
+    });
 };
+
+const calculateExchangeRate = computed(() => {
+    // Mock exchange rate calculation
+    const rates: Record<string, number> = {
+        'USD-EUR': 0.85,
+        'EUR-USD': 1.18,
+        'USD-GBP': 0.79,
+        'GBP-USD': 1.27,
+    };
+    const key = `${exchangeForm.source_currency}-${exchangeForm.destination_currency}`;
+    return rates[key] || 1;
+});
+
+const calculateDestinationAmount = computed(() => {
+    return (exchangeForm.amount * calculateExchangeRate.value).toFixed(2);
+});
+
+const calculateFees = computed(() => {
+    const panetaFee = exchangeForm.amount * 0.0099;
+    const providerFee = exchangeForm.amount * 0.002;
+    return {
+        paneta: panetaFee.toFixed(2),
+        provider: providerFee.toFixed(2),
+        total: (panetaFee + providerFee).toFixed(2),
+        netAmount: (exchangeForm.amount + panetaFee + providerFee).toFixed(2),
+    };
+});
 </script>
 
 <template>
@@ -676,7 +740,7 @@ const confirmExchange = () => {
                                         </div>
 
                                         <!-- Start Exchange Button -->
-                                        <Button size="sm" class="w-full bg-purple-600 hover:bg-purple-700 text-white shadow-md" @click="openExchangeDialog(provider)">
+                                        <Button size="sm" class="w-full bg-purple-600 hover:bg-purple-700 text-white shadow-md" @click="openIntentDialog(provider)">
                                             <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                                             </svg>
@@ -728,5 +792,323 @@ const confirmExchange = () => {
                 </TabsContent>
             </Tabs>
         </div>
+
+        <!-- FX Intent Dialog (Stage 1) -->
+        <Dialog :open="showIntentDialog" @update:open="showIntentDialog = $event">
+            <DialogContent class="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle class="text-2xl">Define Your Exchange Intent</DialogTitle>
+                    <DialogDescription>
+                        Enter your exchange details to proceed with {{ selectedProvider?.name }}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div class="space-y-6 py-4">
+                    <!-- Source Account -->
+                    <div class="space-y-2">
+                        <Label for="source_account">Source Account (You're Sending From)</Label>
+                        <Select v-model="exchangeForm.source_account_id">
+                            <SelectTrigger id="source_account">
+                                <SelectValue placeholder="Select source account" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem v-for="account in linkedAccounts" :key="account.id" :value="account.id.toString()">
+                                    {{ account.institution?.name }} - ****{{ account.id }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <!-- Destination Account -->
+                    <div class="space-y-2">
+                        <Label for="destination_account">Destination Account (You're Receiving To)</Label>
+                        <Select v-model="exchangeForm.destination_account_id">
+                            <SelectTrigger id="destination_account">
+                                <SelectValue placeholder="Select destination account" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem v-for="account in linkedAccounts" :key="account.id" :value="account.id.toString()">
+                                    {{ account.institution?.name }} - ****{{ account.id }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <!-- Currency Pair -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <Label for="source_currency">Source Currency</Label>
+                            <Select v-model="exchangeForm.source_currency">
+                                <SelectTrigger id="source_currency">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="currency in currencies" :key="currency" :value="currency">
+                                        {{ currency }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="destination_currency">Destination Currency</Label>
+                            <Select v-model="exchangeForm.destination_currency">
+                                <SelectTrigger id="destination_currency">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="currency in currencies" :key="currency" :value="currency">
+                                        {{ currency }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <!-- Amount -->
+                    <div class="space-y-2">
+                        <Label for="amount">Amount to Exchange</Label>
+                        <Input 
+                            id="amount" 
+                            type="number" 
+                            v-model.number="exchangeForm.amount" 
+                            placeholder="Enter amount"
+                            min="1"
+                        />
+                        <p class="text-sm text-muted-foreground">
+                            You will receive approximately {{ calculateDestinationAmount }} {{ exchangeForm.destination_currency }}
+                        </p>
+                    </div>
+
+                    <!-- Settlement Preference -->
+                    <div class="space-y-2">
+                        <Label for="settlement">Settlement Preference</Label>
+                        <Select v-model="exchangeForm.settlement_preference">
+                            <SelectTrigger id="settlement">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="instant">Instant Settlement</SelectItem>
+                                <SelectItem value="standard">Standard (1-2 days)</SelectItem>
+                                <SelectItem value="economy">Economy (3-5 days)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <Button variant="outline" class="flex-1" @click="closeIntentDialog">
+                        Cancel
+                    </Button>
+                    <Button class="flex-1 bg-purple-600 hover:bg-purple-700" @click="proceedToConfirmation">
+                        Review & Confirm
+                        <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        <!-- Exchange Confirmation Dialog -->
+        <Dialog :open="showExchangeDialog" @update:open="showExchangeDialog = $event">
+            <DialogContent class="max-w-7xl max-h-[90vh] overflow-y-auto">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-purple-600 to-indigo-600 -m-6 mb-6 p-6 text-white">
+                    <DialogHeader>
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
+                                <ArrowRightLeft class="h-6 w-6" />
+                            </div>
+                            <div>
+                                <DialogTitle class="text-2xl text-white">Exchange Market Transaction Confirmation</DialogTitle>
+                                <DialogDescription class="text-purple-100">
+                                    Review and confirm your currency exchange with premium global provider
+                                </DialogDescription>
+                            </div>
+                            <Badge class="ml-auto bg-white/20 text-white border-white/30">Global Exchange</Badge>
+                        </div>
+                    </DialogHeader>
+                </div>
+
+                <div class="grid gap-6 md:grid-cols-2">
+                    <!-- Exchange Provider Details -->
+                    <Card class="border-2 border-blue-200">
+                        <CardHeader class="bg-blue-50">
+                            <CardTitle class="flex items-center gap-2 text-blue-900">
+                                <Globe class="h-5 w-5" />
+                                Exchange Provider Details
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent class="p-6 space-y-4" v-if="selectedProvider">
+                            <!-- Provider Info -->
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-purple-700 text-white font-bold text-xl">
+                                    {{ selectedProvider.name.split(' ').map(n => n[0]).join('').substring(0, 1).toUpperCase() }}
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="font-semibold text-lg">{{ selectedProvider.name }}</h3>
+                                    <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <svg class="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <span>{{ selectedProvider.country || 'South Africa' }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="text-yellow-500 text-sm">★ 4.8</span>
+                                        <span class="text-xs text-muted-foreground">Verified</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Processing & Security -->
+                            <div class="grid grid-cols-2 gap-4 pt-4 border-t">
+                                <div>
+                                    <p class="text-xs text-muted-foreground">Processing Time</p>
+                                    <p class="font-semibold">5 min</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-muted-foreground">Security Level</p>
+                                    <p class="font-semibold">Enterprise</p>
+                                </div>
+                            </div>
+
+                            <!-- Licenses & Certifications -->
+                            <div>
+                                <p class="text-xs font-semibold text-muted-foreground mb-2">Licenses & Certifications</p>
+                                <div class="flex gap-2">
+                                    <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-200">SARB</Badge>
+                                    <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-200">FSCA</Badge>
+                                </div>
+                            </div>
+
+                            <!-- Provider Features -->
+                            <div>
+                                <p class="text-xs font-semibold text-muted-foreground mb-2">Provider Features</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <Badge variant="secondary" class="text-xs bg-green-100 text-green-700">Mobile Integration</Badge>
+                                    <Badge variant="secondary" class="text-xs bg-green-100 text-green-700">Real-time Rates</Badge>
+                                    <Badge variant="secondary" class="text-xs bg-green-100 text-green-700">Local Expertise</Badge>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <!-- Transaction Summary -->
+                    <Card class="border-2 border-green-200">
+                        <CardHeader class="bg-green-50">
+                            <CardTitle class="flex items-center gap-2 text-green-900">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                Transaction Summary
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent class="p-6 space-y-4">
+                            <!-- Exchange Amounts -->
+                            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div>
+                                        <p class="text-xs text-muted-foreground">You Send</p>
+                                        <p class="text-2xl font-bold text-green-700">{{ exchangeForm.amount.toLocaleString() }} {{ exchangeForm.source_currency }}</p>
+                                    </div>
+                                    <ArrowRightLeft class="h-6 w-6 text-green-600" />
+                                    <div class="text-right">
+                                        <p class="text-xs text-muted-foreground">You Receive</p>
+                                        <p class="text-2xl font-bold text-green-700">{{ calculateDestinationAmount }} {{ exchangeForm.destination_currency }}</p>
+                                    </div>
+                                </div>
+                                <div class="text-center pt-3 border-t border-green-200">
+                                    <p class="text-xs text-muted-foreground">Exchange Rate</p>
+                                    <p class="font-semibold text-green-900">1 {{ exchangeForm.source_currency }} = {{ calculateExchangeRate }} {{ exchangeForm.destination_currency }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Fee Breakdown -->
+                            <div class="space-y-2">
+                                <p class="text-sm font-semibold">Fee Breakdown</p>
+                                <div class="space-y-1 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-muted-foreground">PANÉTA Processing Fee (0.99%)</span>
+                                        <span class="font-medium">{{ calculateFees.paneta }} {{ exchangeForm.source_currency }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-muted-foreground">Provider Fee (0.20%)</span>
+                                        <span class="font-medium">{{ calculateFees.provider }} {{ exchangeForm.source_currency }}</span>
+                                    </div>
+                                    <div class="flex justify-between pt-2 border-t font-semibold">
+                                        <span>Total Fees</span>
+                                        <span class="text-red-600">{{ calculateFees.total }} {{ exchangeForm.source_currency }}</span>
+                                    </div>
+                                    <div class="flex justify-between pt-2 border-t font-bold text-base">
+                                        <span>Net Amount Debited</span>
+                                        <span class="text-blue-600">{{ calculateFees.netAmount }} {{ exchangeForm.source_currency }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <!-- Settlement Account Details -->
+                <Card class="border-2 border-orange-200">
+                    <CardHeader class="bg-orange-50">
+                        <CardTitle class="flex items-center gap-2 text-orange-900">
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"></path>
+                                <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"></path>
+                            </svg>
+                            Settlement Account Details
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent class="p-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <svg class="h-8 w-8 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path>
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"></path>
+                                </svg>
+                                <div>
+                                    <p class="font-semibold" v-if="selectedProvider">{{ selectedProvider.name }} Settlement Account</p>
+                                    <p class="text-sm text-muted-foreground">AfriCurrency Hub - ****7756</p>
+                                    <p class="text-xs text-muted-foreground">Exchange Provider Account</p>
+                                </div>
+                            </div>
+                            <Badge class="bg-orange-100 text-orange-700 border-orange-300">Provider Account</Badge>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <!-- Security Guarantee -->
+                <Card class="bg-green-50 border-2 border-green-200">
+                    <CardContent class="p-4">
+                        <div class="flex gap-3">
+                            <svg class="h-6 w-6 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <div class="text-sm">
+                                <p class="font-semibold text-green-900">PANÉTA Security Guarantee</p>
+                                <p class="text-green-800">This Exchange Market transaction is protected by PANÉTA's advanced security protocols, escrow system, and international compliance standards. Your funds are secured until successful completion.</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-4 pt-4">
+                    <Button variant="outline" class="flex-1" @click="closeExchangeDialog">
+                        Cancel Transaction
+                    </Button>
+                    <Button class="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white" @click="confirmExchange">
+                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Confirm & Execute Exchange
+                        <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>
