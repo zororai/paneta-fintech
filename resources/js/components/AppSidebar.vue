@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { LayoutGrid, Wallet, ArrowUpRight, Send, FileText, Shield, Users, ArrowRightLeft, TrendingUp, Store, Handshake, Globe, QrCode } from 'lucide-vue-next';
+import { LayoutGrid, Wallet, ArrowUpRight, Send, FileText, Shield, Users, ArrowRightLeft, TrendingUp, Store, Handshake, Globe, QrCode, Receipt } from 'lucide-vue-next';
 import NavFooter from '@/components/NavFooter.vue';
 import NavUser from '@/components/NavUser.vue';
 import {
@@ -60,19 +60,14 @@ const panetaNavItems: NavItem[] = [
         icon: QrCode,
     },
     {
+        title: 'Bills & Airtime',
+        href: '/paneta/bills',
+        icon: Receipt,
+    },
+    {
         title: 'Merchant SoftPOS',
         href: '/paneta/merchant',
         icon: Store,
-    },
-    {
-        title: 'P2P FX Escrow',
-        href: '/paneta/p2p-escrow',
-        icon: Handshake,
-    },
-    {
-        title: 'FX Marketplace',
-        href: '/paneta/fx-marketplace',
-        icon: Globe,
     },
     {
         title: 'Audit Logs',

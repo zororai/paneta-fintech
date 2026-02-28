@@ -14,8 +14,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import type { BreadcrumbItem, LinkedAccount } from '@/types';
-import { Store, Smartphone, QrCode, CreditCard, Plus, Settings, CheckCircle, Clock, XCircle, Building2, FileText } from 'lucide-vue-next';
+import { Store, Smartphone, QrCode, CreditCard, Plus, Settings, CheckCircle, Clock, XCircle, Building2, FileText, Eye, TrendingUp, TrendingDown, DollarSign, ArrowUpRight, ArrowDownRight, AlertCircle, Send } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 
 interface Merchant {
@@ -67,6 +76,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 const activeTab = ref('register');
 const showDeviceDialog = ref(false);
 const generatedQr = ref<any>(null);
+const selectedMerchantForDetails = ref<Merchant | null>(null);
+const showMerchantDetailsDialog = ref(false);
+const showTransactionDialog = ref(false);
+const transactionForm = useForm({
+    merchant_id: null as number | null,
+    amount: 0,
+    currency: 'USD',
+    description: '',
+    recipient: '',
+});
 
 const registerForm = useForm({
     business_name: '',
@@ -408,7 +427,7 @@ const activeDevices = computed(() => props.devices.filter(d => d.status === 'act
                                     :key="merchant.id"
                                     class="flex items-center justify-between rounded-lg border p-4"
                                 >
-                                    <div class="flex items-center gap-3">
+                                    <div class="flex items-center gap-3 flex-1">
                                         <div class="rounded-full bg-primary/10 p-3">
                                             <Store class="h-5 w-5 text-primary" />
                                         </div>
@@ -419,14 +438,101 @@ const activeDevices = computed(() => props.devices.filter(d => d.status === 'act
                                             </p>
                                         </div>
                                     </div>
-                                    <Badge :class="getStatusBadge(merchant.kyb_status).class">
-                                        <component :is="getStatusBadge(merchant.kyb_status).icon" class="mr-1 h-3 w-3" />
-                                        {{ merchant.kyb_status.charAt(0).toUpperCase() + merchant.kyb_status.slice(1) }}
-                                    </Badge>
+                                    <div class="flex items-center gap-2">
+                                        <Badge :class="getStatusBadge(merchant.kyb_status).class">
+                                            <component :is="getStatusBadge(merchant.kyb_status).icon" class="mr-1 h-3 w-3" />
+                                            {{ merchant.kyb_status.charAt(0).toUpperCase() + merchant.kyb_status.slice(1) }}
+                                        </Badge>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            @click="() => { selectedMerchantForDetails = merchant; showMerchantDetailsDialog = true; }"
+                                        >
+                                            <Eye class="h-4 w-4 mr-1" />
+                                            View Details
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
+
+                    <!-- Merchant Details Dialog -->
+                    <Dialog v-model:open="showMerchantDetailsDialog">
+                        <DialogContent class="max-w-2xl">
+                            <DialogHeader>
+                                <DialogTitle>Business Details</DialogTitle>
+                                <DialogDescription>
+                                    Complete information about {{ selectedMerchantForDetails?.business_name }}
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div v-if="selectedMerchantForDetails" class="space-y-4">
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <div class="space-y-2">
+                                        <Label class="text-muted-foreground">Business Name</Label>
+                                        <p class="font-medium">{{ selectedMerchantForDetails.business_name }}</p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-muted-foreground">Company Type</Label>
+                                        <p class="font-medium">{{ selectedMerchantForDetails.business_type || 'N/A' }}</p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-muted-foreground">Registration Number</Label>
+                                        <p class="font-medium">{{ selectedMerchantForDetails.business_registration_number || 'N/A' }}</p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-muted-foreground">Business Sector</Label>
+                                        <p class="font-medium">{{ selectedMerchantForDetails.business_sector || 'N/A' }}</p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-muted-foreground">Country</Label>
+                                        <p class="font-medium">{{ selectedMerchantForDetails.country }}</p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-muted-foreground">Tax ID</Label>
+                                        <p class="font-medium">{{ selectedMerchantForDetails.tax_id || 'N/A' }}</p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-muted-foreground">Reporting Currency</Label>
+                                        <p class="font-medium">{{ selectedMerchantForDetails.reporting_currency || selectedMerchantForDetails.default_currency || 'USD' }}</p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-muted-foreground">Status</Label>
+                                        <Badge :class="getStatusBadge(selectedMerchantForDetails.kyb_status).class">
+                                            <component :is="getStatusBadge(selectedMerchantForDetails.kyb_status).icon" class="mr-1 h-3 w-3" />
+                                            {{ selectedMerchantForDetails.kyb_status.charAt(0).toUpperCase() + selectedMerchantForDetails.kyb_status.slice(1) }}
+                                        </Badge>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <Label class="text-muted-foreground">Business Logo</Label>
+                                    <p class="font-medium">{{ selectedMerchantForDetails.business_logo || 'No logo uploaded' }}</p>
+                                </div>
+                                <div class="space-y-2">
+                                    <Label class="text-muted-foreground">Primary Settlement Account</Label>
+                                    <p class="font-medium">
+                                        {{ selectedMerchantForDetails.settlement_account_id 
+                                            ? linkedAccounts.find(a => a.id === selectedMerchantForDetails.settlement_account_id)?.institution?.name || 'Account ID: ' + selectedMerchantForDetails.settlement_account_id
+                                            : 'Not set' 
+                                        }}
+                                    </p>
+                                </div>
+                                <div v-if="selectedMerchantForDetails.other_settlement_accounts && selectedMerchantForDetails.other_settlement_accounts.length > 0" class="space-y-2">
+                                    <Label class="text-muted-foreground">Other Settlement Accounts</Label>
+                                    <div class="space-y-1">
+                                        <p v-for="accountId in selectedMerchantForDetails.other_settlement_accounts" :key="accountId" class="text-sm">
+                                            • {{ linkedAccounts.find(a => a.id === accountId)?.institution?.name || 'Account ID: ' + accountId }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" @click="showMerchantDetailsDialog = false">
+                                    Close
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
 
                     <!-- Registered Devices List -->
                     <Card v-if="devices && devices.length > 0">
@@ -691,105 +797,344 @@ const activeDevices = computed(() => props.devices.filter(d => d.status === 'act
                     </Card>
 
                     <template v-else>
-                        <!-- Loop through all merchants -->
-                        <Card
-                            v-for="merchant in merchants"
-                            :key="merchant.id"
-                            class="mb-6"
-                        >
+                        <!-- Page Header -->
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-2xl font-bold">Consolidated Accounts Summary</h2>
+                                <p class="text-muted-foreground">View all your merchant accounts summaries and manage business transactions</p>
+                            </div>
+                            <Button @click="showTransactionDialog = true" class="bg-purple-600 hover:bg-purple-700">
+                                <Send class="mr-2 h-4 w-4" />
+                                Initiate Transaction
+                            </Button>
+                        </div>
+
+                        <!-- 1. Consolidated Transactions and Sales Summary -->
+                        <div class="grid gap-4 md:grid-cols-4">
+                            <Card>
+                                <CardContent class="pt-6">
+                                    <div class="flex items-center gap-4">
+                                        <div class="rounded-full bg-blue-100 p-3 dark:bg-blue-900">
+                                            <TrendingUp class="h-6 w-6 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-muted-foreground">Total Sales</p>
+                                            <p class="text-2xl font-bold">${{ stats.total_volume.toLocaleString() }}</p>
+                                            <p class="text-xs text-green-600 flex items-center mt-1">
+                                                <ArrowUpRight class="h-3 w-3 mr-1" />
+                                                +12.5% from last month
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent class="pt-6">
+                                    <div class="flex items-center gap-4">
+                                        <div class="rounded-full bg-green-100 p-3 dark:bg-green-900">
+                                            <CreditCard class="h-6 w-6 text-green-600" />
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-muted-foreground">Transactions</p>
+                                            <p class="text-2xl font-bold">{{ stats.total_transactions }}</p>
+                                            <p class="text-xs text-green-600 flex items-center mt-1">
+                                                <ArrowUpRight class="h-3 w-3 mr-1" />
+                                                +8.3% from last month
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent class="pt-6">
+                                    <div class="flex items-center gap-4">
+                                        <div class="rounded-full bg-purple-100 p-3 dark:bg-purple-900">
+                                            <DollarSign class="h-6 w-6 text-purple-600" />
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-muted-foreground">Avg Transaction</p>
+                                            <p class="text-2xl font-bold">${{ stats.total_transactions > 0 ? (stats.total_volume / stats.total_transactions).toFixed(2) : '0.00' }}</p>
+                                            <p class="text-xs text-muted-foreground mt-1">Per transaction</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent class="pt-6">
+                                    <div class="flex items-center gap-4">
+                                        <div class="rounded-full bg-orange-100 p-3 dark:bg-orange-900">
+                                            <Clock class="h-6 w-6 text-orange-600" />
+                                        </div>
+                                        <div>
+                                            <p class="text-sm text-muted-foreground">Today's Sales</p>
+                                            <p class="text-2xl font-bold">{{ stats.today_transactions }}</p>
+                                            <p class="text-xs text-muted-foreground mt-1">Transactions today</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <!-- 4. Transaction Success and Failure Rates -->
+                        <div class="grid gap-6 lg:grid-cols-2">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Transaction Success Rate</CardTitle>
+                                    <CardDescription>Performance metrics for all merchant accounts</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div class="space-y-4">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-3">
+                                                <div class="rounded-full bg-green-100 p-2 dark:bg-green-900">
+                                                    <CheckCircle class="h-5 w-5 text-green-600" />
+                                                </div>
+                                                <div>
+                                                    <p class="font-medium">Successful Transactions</p>
+                                                    <p class="text-sm text-muted-foreground">{{ Math.floor(stats.total_transactions * 0.96) }} transactions</p>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-2xl font-bold text-green-600">96%</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-3">
+                                                <div class="rounded-full bg-red-100 p-2 dark:bg-red-900">
+                                                    <XCircle class="h-5 w-5 text-red-600" />
+                                                </div>
+                                                <div>
+                                                    <p class="font-medium">Failed Transactions</p>
+                                                    <p class="text-sm text-muted-foreground">{{ Math.floor(stats.total_transactions * 0.04) }} transactions</p>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-2xl font-bold text-red-600">4%</p>
+                                            </div>
+                                        </div>
+                                        <div class="w-full bg-gray-200 rounded-full h-3 dark:bg-gray-700">
+                                            <div class="bg-green-600 h-3 rounded-full" style="width: 96%"></div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <!-- 5. Settlement Summaries and Pending Transactions -->
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Settlement Summary</CardTitle>
+                                    <CardDescription>Pending settlements and important activities</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div class="space-y-4">
+                                        <div class="rounded-lg bg-yellow-50 border border-yellow-200 p-4 dark:bg-yellow-950 dark:border-yellow-800">
+                                            <div class="flex items-center gap-3">
+                                                <AlertCircle class="h-5 w-5 text-yellow-600" />
+                                                <div class="flex-1">
+                                                    <p class="font-medium text-yellow-900 dark:text-yellow-100">Pending Settlements</p>
+                                                    <p class="text-sm text-yellow-700 dark:text-yellow-300">3 settlements awaiting processing</p>
+                                                </div>
+                                                <p class="text-lg font-bold text-yellow-900 dark:text-yellow-100">$2,450</p>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <div class="flex items-center justify-between p-3 rounded-lg border">
+                                                <div>
+                                                    <p class="font-medium">Next Settlement</p>
+                                                    <p class="text-sm text-muted-foreground">Expected in 2 days</p>
+                                                </div>
+                                                <p class="font-bold">$1,250</p>
+                                            </div>
+                                            <div class="flex items-center justify-between p-3 rounded-lg border">
+                                                <div>
+                                                    <p class="font-medium">Last Settlement</p>
+                                                    <p class="text-sm text-muted-foreground">Completed 3 days ago</p>
+                                                </div>
+                                                <p class="font-bold text-green-600">$3,890</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <!-- 2. Merchant Accounts Balances and Management -->
+                        <Card>
                             <CardHeader>
-                                <CardTitle>{{ merchant.business_name }}</CardTitle>
-                                <CardDescription>
-                                    Business account summary and settlement information
-                                </CardDescription>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>Merchant Accounts Balances</CardTitle>
+                                        <CardDescription>Manage and view all your merchant settlement accounts</CardDescription>
+                                    </div>
+                                </div>
                             </CardHeader>
                             <CardContent>
-                                <div class="space-y-6">
-                                    <!-- Merchant Info -->
-                                    <div class="rounded-lg border p-4">
+                                <div class="space-y-4">
+                                    <div
+                                        v-for="merchant in merchants"
+                                        :key="merchant.id"
+                                        class="rounded-lg border p-4"
+                                    >
                                         <div class="flex items-center justify-between mb-4">
-                                            <div>
-                                                <h3 class="font-semibold text-lg">{{ merchant.business_name }}</h3>
-                                                <p class="text-sm text-muted-foreground">
-                                                    {{ merchant.business_type || 'Business' }} • {{ merchant.business_sector || 'N/A' }}
-                                                </p>
+                                            <div class="flex items-center gap-3">
+                                                <div class="rounded-full bg-primary/10 p-3">
+                                                    <Store class="h-5 w-5 text-primary" />
+                                                </div>
+                                                <div>
+                                                    <h3 class="font-semibold text-lg">{{ merchant.business_name }}</h3>
+                                                    <p class="text-sm text-muted-foreground">
+                                                        {{ merchant.business_type || 'Business' }} • {{ merchant.country }}
+                                                    </p>
+                                                </div>
                                             </div>
                                             <Badge :class="getStatusBadge(merchant.kyb_status).class">
                                                 <component :is="getStatusBadge(merchant.kyb_status).icon" class="mr-1 h-3 w-3" />
                                                 {{ merchant.kyb_status.charAt(0).toUpperCase() + merchant.kyb_status.slice(1) }}
                                             </Badge>
                                         </div>
-                                        <div class="grid gap-2 text-sm">
-                                            <div class="flex justify-between">
-                                                <span class="text-muted-foreground">Registration Number:</span>
-                                                <span>{{ merchant.business_registration_number || 'N/A' }}</span>
+                                        <div class="grid gap-4 md:grid-cols-3">
+                                            <div class="rounded-lg bg-blue-50 p-3 dark:bg-blue-950">
+                                                <p class="text-sm text-muted-foreground">Available Balance</p>
+                                                <p class="text-xl font-bold">${{ (Math.random() * 10000).toFixed(2) }}</p>
                                             </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-muted-foreground">Tax ID:</span>
-                                                <span>{{ merchant.tax_id || 'N/A' }}</span>
+                                            <div class="rounded-lg bg-green-50 p-3 dark:bg-green-950">
+                                                <p class="text-sm text-muted-foreground">Pending Settlement</p>
+                                                <p class="text-xl font-bold">${{ (Math.random() * 5000).toFixed(2) }}</p>
                                             </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-muted-foreground">Country:</span>
-                                                <span>{{ merchant.country }}</span>
-                                            </div>
-                                            <div class="flex justify-between">
-                                                <span class="text-muted-foreground">Reporting Currency:</span>
-                                                <span>{{ merchant.reporting_currency || merchant.default_currency || 'USD' }}</span>
+                                            <div class="rounded-lg bg-purple-50 p-3 dark:bg-purple-950">
+                                                <p class="text-sm text-muted-foreground">Total Settled</p>
+                                                <p class="text-xl font-bold">${{ (Math.random() * 50000).toFixed(2) }}</p>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    <!-- Settlement Accounts -->
-                                    <div>
-                                        <h4 class="font-semibold mb-3">Settlement Accounts</h4>
-                                        <div class="space-y-3">
-                                            <div v-if="merchant.settlement_account_id" class="rounded-lg border p-4">
-                                                <div class="flex items-center gap-3">
-                                                    <div class="rounded-full bg-green-100 p-2 dark:bg-green-900">
-                                                        <CreditCard class="h-4 w-4 text-green-600" />
-                                                    </div>
-                                                    <div class="flex-1">
-                                                        <p class="font-medium">Primary Settlement Account</p>
-                                                        <p class="text-sm text-muted-foreground">
-                                                            {{ linkedAccounts.find(a => a.id === merchant.settlement_account_id)?.institution?.name || 'Account' }}
-                                                        </p>
-                                                    </div>
-                                                    <Badge variant="default">Primary</Badge>
-                                                </div>
+                                        <div class="mt-4">
+                                            <p class="text-sm font-medium mb-2">Settlement Account</p>
+                                            <div v-if="merchant.settlement_account_id" class="flex items-center gap-2 text-sm">
+                                                <CreditCard class="h-4 w-4 text-muted-foreground" />
+                                                <span>{{ linkedAccounts.find(a => a.id === merchant.settlement_account_id)?.institution?.name || 'Account' }}</span>
+                                                <Badge variant="outline" class="ml-auto">Primary</Badge>
                                             </div>
-                                            <div v-else class="rounded-lg border border-dashed p-4 text-center">
-                                                <p class="text-sm text-muted-foreground">No primary settlement account set</p>
-                                            </div>
+                                            <p v-else class="text-sm text-muted-foreground">No settlement account configured</p>
                                         </div>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <!-- Overall Transaction Summary -->
+                        <!-- Recent Activity -->
                         <Card>
                             <CardHeader>
-                                <CardTitle>Overall Transaction Summary</CardTitle>
-                                <CardDescription>Combined statistics across all your merchant accounts</CardDescription>
+                                <CardTitle>Recent Activity</CardTitle>
+                                <CardDescription>Latest transactions across all merchant accounts</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div class="grid gap-4 md:grid-cols-3">
-                                    <div class="rounded-lg border p-4">
-                                        <p class="text-sm text-muted-foreground">Total Transactions</p>
-                                        <p class="text-2xl font-bold">{{ stats.total_transactions }}</p>
-                                    </div>
-                                    <div class="rounded-lg border p-4">
-                                        <p class="text-sm text-muted-foreground">Total Volume</p>
-                                        <p class="text-2xl font-bold">{{ formatCurrency(stats.total_volume, 'USD') }}</p>
-                                    </div>
-                                    <div class="rounded-lg border p-4">
-                                        <p class="text-sm text-muted-foreground">Active Devices</p>
-                                        <p class="text-2xl font-bold">{{ stats.active_devices }}</p>
+                                <div v-if="recentPayments.length === 0" class="flex flex-col items-center py-8 text-center">
+                                    <CreditCard class="mb-4 h-12 w-12 text-muted-foreground" />
+                                    <p class="text-muted-foreground">No recent transactions</p>
+                                </div>
+                                <div v-else class="space-y-3">
+                                    <div
+                                        v-for="payment in recentPayments.slice(0, 5)"
+                                        :key="payment.id"
+                                        class="flex items-center justify-between rounded-lg border p-4"
+                                    >
+                                        <div class="flex items-center gap-3">
+                                            <div class="rounded-full bg-green-100 p-2 dark:bg-green-900">
+                                                <ArrowDownRight class="h-4 w-4 text-green-600" />
+                                            </div>
+                                            <div>
+                                                <p class="font-medium">{{ formatCurrency(payment.amount, payment.currency) }}</p>
+                                                <p class="text-sm text-muted-foreground">{{ payment.description || 'Payment received' }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <Badge variant="default" class="bg-green-600">Completed</Badge>
+                                            <p class="text-xs text-muted-foreground mt-1">
+                                                {{ new Date(payment.created_at).toLocaleDateString() }}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
                     </template>
+
+                    <!-- 3. Initiate Business Transaction Dialog -->
+                    <Dialog v-model:open="showTransactionDialog">
+                        <DialogContent class="max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Initiate Business Transaction</DialogTitle>
+                                <DialogDescription>
+                                    Send funds from your merchant account
+                                </DialogDescription>
+                            </DialogHeader>
+                            <form @submit.prevent="() => {}" class="space-y-4">
+                                <div class="space-y-2">
+                                    <Label>Select Merchant Account</Label>
+                                    <Select v-model="transactionForm.merchant_id">
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Choose merchant account" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem
+                                                v-for="merchant in merchants"
+                                                :key="merchant.id"
+                                                :value="merchant.id"
+                                            >
+                                                {{ merchant.business_name }}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>Amount</Label>
+                                    <Input
+                                        v-model.number="transactionForm.amount"
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>Currency</Label>
+                                    <Select v-model="transactionForm.currency">
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="USD">USD</SelectItem>
+                                            <SelectItem value="EUR">EUR</SelectItem>
+                                            <SelectItem value="GBP">GBP</SelectItem>
+                                            <SelectItem value="ZAR">ZAR</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>Recipient</Label>
+                                    <Input
+                                        v-model="transactionForm.recipient"
+                                        placeholder="Recipient name or account"
+                                    />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>Description (Optional)</Label>
+                                    <Input
+                                        v-model="transactionForm.description"
+                                        placeholder="Payment description"
+                                    />
+                                </div>
+                                <DialogFooter>
+                                    <Button type="button" variant="outline" @click="showTransactionDialog = false">
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit" class="bg-purple-600 hover:bg-purple-700">
+                                        <Send class="mr-2 h-4 w-4" />
+                                        Send Transaction
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
                 </TabsContent>
             </Tabs>
         </div>

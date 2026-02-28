@@ -99,10 +99,10 @@ class TreasuryLedgerService
 
             if ($adjustedBy) {
                 $this->auditService->log(
-                    $adjustedBy->id,
                     'ledger_adjustment',
                     'PlatformLedger',
                     $entry->id,
+                    $adjustedBy,
                     [
                         'amount' => $amount,
                         'currency' => $currency,
@@ -140,14 +140,14 @@ class TreasuryLedgerService
             CurrencyBalance::forCurrency($currency)->addRefund($amount);
 
             $this->auditService->log(
-                $approvedBy->id,
                 'ledger_write_off',
                 'PlatformLedger',
                 $entry->id,
+                $approvedBy,
                 [
                     'amount' => $amount,
                     'currency' => $currency,
-                    'description' => $description,
+                    'reason' => $description,
                 ]
             );
 

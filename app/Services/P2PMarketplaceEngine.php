@@ -61,10 +61,10 @@ class P2PMarketplaceEngine
         ]);
 
         $this->auditService->log(
-            $user->id,
             'fx_offer_created',
             'FxOffer',
             $offer->id,
+            $user,
             [
                 'sell_currency' => $sellCurrency,
                 'buy_currency' => $buyCurrency,
@@ -197,10 +197,10 @@ class P2PMarketplaceEngine
         $offer->transitionTo('cancelled');
 
         $this->auditService->log(
-            $user->id,
             'fx_offer_cancelled',
             'FxOffer',
             $offer->id,
+            $user,
             []
         );
 

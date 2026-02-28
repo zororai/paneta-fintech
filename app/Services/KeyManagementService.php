@@ -81,10 +81,10 @@ class KeyManagementService
             $this->clearKeyCache($keyType);
 
             $this->auditService->log(
-                $rotator->id,
                 'key_rotated',
                 'KeyRotation',
                 $newKey->id,
+                $rotator,
                 [
                     'key_type' => $keyType,
                     'new_version' => $newVersion,
@@ -117,10 +117,10 @@ class KeyManagementService
             $this->clearKeyCache($keyType);
 
             $this->auditService->log(
-                $revoker->id,
                 'key_revoked',
                 'KeyRotation',
                 $key->id,
+                $revoker,
                 [
                     'key_type' => $keyType,
                     'version' => $version,
@@ -158,10 +158,10 @@ class KeyManagementService
             $this->clearKeyCache($keyType);
 
             $this->auditService->log(
-                $handler->id,
                 'key_compromise_handled',
                 'KeyRotation',
                 $newKey->id,
+                $handler,
                 [
                     'key_type' => $keyType,
                     'revoked_versions' => $revokedKeys,

@@ -93,10 +93,10 @@ class CrossBorderOrchestrationEngine
         ]);
 
         $this->auditService->log(
-            $user->id,
             'cross_border_intent_created',
             'CrossBorderTransactionIntent',
             $intent->id,
+            $user,
             [
                 'source_amount' => $sourceAmount,
                 'destination_amount' => $destinationAmount,

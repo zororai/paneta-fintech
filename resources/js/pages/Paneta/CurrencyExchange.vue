@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Select,
     SelectContent,
@@ -14,7 +15,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import type { BreadcrumbItem, LinkedAccount, Institution } from '@/types';
-import { ArrowRightLeft, TrendingUp, Clock, DollarSign, RefreshCw } from 'lucide-vue-next';
+import { ArrowRightLeft, TrendingUp, Clock, DollarSign, RefreshCw, Plus, Users, Globe, Bell } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 
 interface FxQuote {
@@ -121,7 +122,7 @@ const confirmExchange = () => {
                 <div>
                     <h1 class="text-2xl font-bold">Currency Exchange</h1>
                     <p class="text-muted-foreground">
-                        Compare FX rates and generate exchange instructions
+                        Create offers, trade peer-to-peer, access FX marketplace, and set smart alerts
                     </p>
                 </div>
                 <Badge variant="outline" class="text-orange-600 border-orange-600">
@@ -129,7 +130,31 @@ const confirmExchange = () => {
                 </Badge>
             </div>
 
-            <div class="grid gap-6 lg:grid-cols-3">
+            <!-- Horizontal Tab Navigation -->
+            <Tabs default-value="create-offer" class="w-full">
+                <TabsList class="grid w-full grid-cols-4">
+                    <TabsTrigger value="create-offer" class="flex items-center gap-2">
+                        <Plus class="h-4 w-4" />
+                        Create Offer
+                    </TabsTrigger>
+                    <TabsTrigger value="peer-to-peer" class="flex items-center gap-2">
+                        <Users class="h-4 w-4" />
+                        Peer-to-Peer
+                    </TabsTrigger>
+                    <TabsTrigger value="fx-marketplace" class="flex items-center gap-2">
+                        <Globe class="h-4 w-4" />
+                        FX Marketplace
+                    </TabsTrigger>
+                    <TabsTrigger value="smart-alerts" class="flex items-center gap-2">
+                        <Bell class="h-4 w-4" />
+                        Smart Alerts
+                    </TabsTrigger>
+                </TabsList>
+
+                <!-- Create Offer Tab -->
+                <TabsContent value="create-offer" class="space-y-6">
+
+                    <div class="grid gap-6 lg:grid-cols-3">
                 <!-- Convert Currency Widget -->
                 <Card class="lg:col-span-1">
                     <CardHeader>
@@ -295,34 +320,105 @@ const confirmExchange = () => {
                         </div>
                     </CardContent>
                 </Card>
-            </div>
-
-            <!-- FX Providers -->
-            <Card>
-                <CardHeader>
-                    <CardTitle>Active FX Providers</CardTitle>
-                    <CardDescription>
-                        Connected providers for currency exchange
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div class="grid gap-4 md:grid-cols-4">
-                        <div 
-                            v-for="provider in fxProviders" 
-                            :key="provider.id"
-                            class="flex items-center gap-3 rounded-lg border p-3"
-                        >
-                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                                <ArrowRightLeft class="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <div class="font-medium">{{ provider.name }}</div>
-                                <Badge variant="outline" class="text-xs">{{ provider.type }}</Badge>
-                            </div>
-                        </div>
                     </div>
-                </CardContent>
-            </Card>
+
+                    <!-- FX Providers -->
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Active FX Providers</CardTitle>
+                            <CardDescription>
+                                Connected providers for currency exchange
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="grid gap-4 md:grid-cols-4">
+                                <div 
+                                    v-for="provider in fxProviders" 
+                                    :key="provider.id"
+                                    class="flex items-center gap-3 rounded-lg border p-3"
+                                >
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                                        <ArrowRightLeft class="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div>
+                                        <div class="font-medium">{{ provider.name }}</div>
+                                        <Badge variant="outline" class="text-xs">{{ provider.type }}</Badge>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <!-- Peer-to-Peer Tab -->
+                <TabsContent value="peer-to-peer" class="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <Users class="h-5 w-5" />
+                                Peer-to-Peer Currency Exchange
+                            </CardTitle>
+                            <CardDescription>
+                                Trade directly with other users in a secure escrow environment
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="flex flex-col items-center justify-center py-12 text-center">
+                                <Users class="mb-4 h-12 w-12 text-muted-foreground" />
+                                <p class="text-muted-foreground">
+                                    Peer-to-Peer functionality coming soon
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <!-- FX Marketplace Tab -->
+                <TabsContent value="fx-marketplace" class="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <Globe class="h-5 w-5" />
+                                FX Marketplace
+                            </CardTitle>
+                            <CardDescription>
+                                Access institutional-grade FX marketplace with competitive rates
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="flex flex-col items-center justify-center py-12 text-center">
+                                <Globe class="mb-4 h-12 w-12 text-muted-foreground" />
+                                <p class="text-muted-foreground">
+                                    FX Marketplace functionality coming soon
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <!-- Smart Alerts Tab -->
+                <TabsContent value="smart-alerts" class="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <Bell class="h-5 w-5" />
+                                Smart Alerts
+                            </CardTitle>
+                            <CardDescription>
+                                Set up alerts for favorable exchange rates and market movements
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="flex flex-col items-center justify-center py-12 text-center">
+                                <Bell class="mb-4 h-12 w-12 text-muted-foreground" />
+                                <p class="text-muted-foreground">
+                                    Smart Alerts functionality coming soon
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     </AppLayout>
 </template>

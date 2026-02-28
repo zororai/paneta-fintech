@@ -55,10 +55,10 @@ class PrivacyComplianceService
         ]);
 
         $this->auditService->log(
-            $user->id,
             'data_export_requested',
             'DataExportRequest',
             $request->id,
+            $user,
             ['request_type' => $requestType]
         );
 
@@ -82,10 +82,10 @@ class PrivacyComplianceService
             $request->markAsCompleted($downloadUrl, $processor);
 
             $this->auditService->log(
-                $processor->id,
                 'data_export_completed',
                 'DataExportRequest',
                 $request->id,
+                $processor,
                 ['user_id' => $request->user_id]
             );
 
@@ -241,10 +241,10 @@ class PrivacyComplianceService
             LinkedAccount::where('user_id', $user->id)->delete();
 
             $this->auditService->log(
-                $processor->id,
                 'data_deletion_completed',
                 'DataExportRequest',
                 $request->id,
+                $processor,
                 ['user_id' => $user->id]
             );
 

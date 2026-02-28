@@ -136,6 +136,11 @@ Route::middleware(['auth', 'verified'])->prefix('paneta')->name('paneta.')->grou
     Route::post('/payment-requests/{paymentRequest}/cancel', [PaymentRequestController::class, 'cancel'])->name('payment-requests.cancel');
     Route::get('/payment-requests/{paymentRequest}', [PaymentRequestController::class, 'show'])->name('payment-requests.show');
 
+    // Bills & Airtime Services
+    Route::get('/bills', [\App\Http\Controllers\Paneta\BillsController::class, 'index'])->name('bills.index');
+    Route::post('/bills/pay', [\App\Http\Controllers\Paneta\BillsController::class, 'payBill'])->name('bills.pay');
+    Route::post('/bills/save-biller', [\App\Http\Controllers\Paneta\BillsController::class, 'saveBiller'])->name('bills.save-biller');
+
     // Merchant SoftPOS
     Route::get('/merchant', [MerchantController::class, 'index'])->name('merchant.index');
     Route::post('/merchant/register', [MerchantController::class, 'register'])->name('merchant.register');

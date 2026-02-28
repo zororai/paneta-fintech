@@ -72,10 +72,10 @@ class AggregationEngine
         }
 
         $this->auditService->log(
-            $user->id,
             'accounts_refreshed',
             'User',
             $user->id,
+            $user,
             ['results' => $results]
         );
 

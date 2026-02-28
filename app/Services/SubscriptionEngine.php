@@ -40,10 +40,10 @@ class SubscriptionEngine
         ]);
 
         $this->auditService->log(
-            $user->id,
             'subscription_created',
             'Subscription',
             $subscription->id,
+            $user,
             [
                 'plan' => $plan->code,
                 'billing_cycle' => $billingCycle,
@@ -65,10 +65,10 @@ class SubscriptionEngine
         $subscription->cancel($reason);
 
         $this->auditService->log(
-            $subscription->user_id,
             'subscription_cancelled',
             'Subscription',
             $subscription->id,
+            $subscription->user,
             ['reason' => $reason]
         );
 
@@ -87,10 +87,10 @@ class SubscriptionEngine
         $subscription->renew();
 
         $this->auditService->log(
-            $subscription->user_id,
             'subscription_renewed',
             'Subscription',
             $subscription->id,
+            $subscription->user,
             []
         );
 
@@ -118,10 +118,10 @@ class SubscriptionEngine
         $current->update(['plan_id' => $newPlan->id]);
 
         $this->auditService->log(
-            $user->id,
             'subscription_upgraded',
             'Subscription',
             $current->id,
+            $user,
             ['new_plan' => $newPlan->code]
         );
 
@@ -172,10 +172,10 @@ class SubscriptionEngine
             $subscription->update(['status' => 'expired']);
 
             $this->auditService->log(
-                $subscription->user_id,
                 'subscription_expired',
                 'Subscription',
                 $subscription->id,
+                $subscription->user,
                 []
             );
         }

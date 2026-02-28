@@ -46,10 +46,10 @@ class MerchantOrchestrationEngine
         ]);
 
         $this->auditService->log(
-            $user->id,
             'merchant_registered',
             'Merchant',
             $merchant->id,
+            $user,
             ['business_name' => $businessName]
         );
 
@@ -205,10 +205,10 @@ class MerchantOrchestrationEngine
         );
 
         $this->auditService->log(
-            $customer->id,
             'merchant_payment_completed',
             'PaymentRequest',
             $paymentRequest->id,
+            $customer,
             [
                 'merchant_id' => $merchant->id,
                 'gross_amount' => $grossAmount,
