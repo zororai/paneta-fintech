@@ -176,9 +176,14 @@ const clearFilters = () => {
                                         </div>
                                     </td>
                                     <td class="py-4">
-                                        <span class="text-sm">{{
-                                            transaction.acquirer_identifier
-                                        }}</span>
+                                        <div>
+                                            <p class="text-sm">
+                                                {{ transaction.destination_institution?.name || 'Unknown' }}
+                                            </p>
+                                            <p class="text-xs text-muted-foreground">
+                                                {{ transaction.acquirer_identifier }}
+                                            </p>
+                                        </div>
                                     </td>
                                     <td class="py-4">
                                         <span class="font-medium">

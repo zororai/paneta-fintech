@@ -253,11 +253,11 @@ const isValidAmount = computed(() => {
             </div>
 
             <!-- Payment Method Tabs -->
-            <div class="flex gap-2 border-b">
+            <div class="grid grid-cols-3 border-b">
                 <button
                     type="button"
                     :class="[
-                        'flex items-center gap-2 px-6 py-3 font-medium transition-colors border-b-2',
+                        'flex items-center justify-center gap-2 px-6 py-3 font-medium transition-colors border-b-2',
                         activeTab === 'manual'
                             ? 'border-primary text-primary bg-primary/5'
                             : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
@@ -270,7 +270,7 @@ const isValidAmount = computed(() => {
                 <button
                     type="button"
                     :class="[
-                        'flex items-center gap-2 px-6 py-3 font-medium transition-colors border-b-2',
+                        'flex items-center justify-center gap-2 px-6 py-3 font-medium transition-colors border-b-2',
                         activeTab === 'scan'
                             ? 'border-primary text-primary bg-primary/5'
                             : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',
@@ -283,7 +283,7 @@ const isValidAmount = computed(() => {
                 <button
                     type="button"
                     :class="[
-                        'flex items-center gap-2 px-6 py-3 font-medium transition-colors border-b-2',
+                        'flex items-center justify-center gap-2 px-6 py-3 font-medium transition-colors border-b-2',
                         activeTab === 'link'
                             ? 'border-primary text-primary bg-primary/5'
                             : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50',

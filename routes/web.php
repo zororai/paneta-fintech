@@ -12,7 +12,9 @@ use App\Http\Controllers\Paneta\PaymentRequestController;
 use App\Http\Controllers\Paneta\P2PEscrowController;
 use App\Http\Controllers\Paneta\FXMarketplaceController;
 use App\Http\Controllers\Paneta\DemoController;
+use App\Http\Controllers\Paneta\RegulatorController;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\EnsureUserIsRegulator;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -168,7 +170,7 @@ Route::middleware(['auth', 'verified'])->prefix('paneta')->name('paneta.')->grou
     Route::post('/demo/payment-requests/{paymentRequest}/simulate-pay', [DemoController::class, 'simulatePayRequest'])->name('demo.payment-requests.pay');
     Route::post('/demo/seed-marketplace', [DemoController::class, 'seedMarketplace'])->name('demo.seed-marketplace');
 
-    // Admin Routes (Read-only regulator view)
+    // Admin Routes
     Route::middleware(EnsureUserIsAdmin::class)->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
         Route::get('/transactions', [AdminController::class, 'transactions'])->name('transactions');
@@ -178,6 +180,18 @@ Route::middleware(['auth', 'verified'])->prefix('paneta')->name('paneta.')->grou
         Route::post('/users/{user}/suspend', [AdminController::class, 'suspendUser'])->name('users.suspend');
         Route::post('/users/{user}/activate', [AdminController::class, 'activateUser'])->name('users.activate');
         Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('users.delete');
+        
+        // Revenue detail endpoints
+        Route::get('/revenue/transaction-fees', [AdminController::class, 'getTransactionFeeDetails'])->name('revenue.transaction-fees');
+        Route::get('/revenue/subscriptions', [AdminController::class, 'getSubscriptionRevenueDetails'])->name('revenue.subscriptions');
+    });
+
+    // Regulator Routes (Read-Only Oversight)
+    Route::middleware(EnsureUserIsRegulator::class)->prefix('regulator')->name('regulator.')->group(function () {
+        Route::get('/', [RegulatorController::class, 'dashboard'])->name('dashboard');
+        Route::get('/transactions', [RegulatorController::class, 'transactions'])->name('transactions');
+        Route::get('/audit-trail', [RegulatorController::class, 'auditTrail'])->name('audit-trail');
+        Route::get('/reports/generate', [RegulatorController::class, 'generateReport'])->name('reports.generate');
     });
 });
 

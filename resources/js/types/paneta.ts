@@ -35,7 +35,13 @@ export interface TransactionIntent {
     created_at: string;
     updated_at: string;
     issuer_account?: LinkedAccount;
+    destination_institution?: Institution;
     payment_instruction?: PaymentInstruction;
+    user?: {
+        id: number;
+        name: string;
+        email: string;
+    };
 }
 
 export interface PaymentInstruction {
@@ -56,6 +62,11 @@ export interface AuditLog {
     entity_id: number | null;
     metadata: Record<string, unknown> | null;
     created_at: string;
+    user?: {
+        id: number;
+        name: string;
+        email: string;
+    };
 }
 
 export interface DashboardData {
@@ -83,7 +94,59 @@ export interface AdminStats {
     pending_transactions: number;
     total_volume: number;
     today_volume: number;
-    total_fees_collected: number;
-    today_fees_collected: number;
+    transaction_fees: number;
+    subscription_revenue: number;
+    ads_revenue: number;
+    total_revenue: number;
     platform_fee_rate: number;
+    current_period: string;
+    transaction_stats: {
+        executed: {
+            count: number;
+            avg_completion_time: number;
+        };
+        pending: {
+            count: number;
+            avg_pending_time: number;
+        };
+        failed: {
+            count: number;
+        };
+    };
+    demographics: {
+        by_country: Array<{ country: string; count: number }>;
+        by_gender: Array<{ gender: string; count: number }>;
+        by_age_group: Array<{ age_group: string; count: number }>;
+    };
+    flagged_data: {
+        transactions: Array<{
+            id: number;
+            type: string;
+            reference: string;
+            user_id: number;
+            user_name: string;
+            reason: string;
+            recommended_action: string;
+            created_at: string;
+        }>;
+        users: Array<{
+            id: number;
+            type: string;
+            name: string;
+            email: string;
+            risk_tier: string;
+            is_suspended: boolean;
+            reason: string;
+            recommended_action: string;
+        }>;
+    };
+    linked_accounts_stats: {
+        total: number;
+        active: number;
+        failed: number;
+        pending: number;
+        success_rate: number;
+        failure_reasons: Array<{ reason: string; count: number }>;
+    };
+    users_by_role: Record<string, number>;
 }

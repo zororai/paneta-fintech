@@ -22,6 +22,7 @@ import { computed } from 'vue';
 const page = usePage();
 const user = computed(() => page.props.auth?.user as { role?: string } | undefined);
 const isAdmin = computed(() => user.value?.role === 'admin');
+const isRegulator = computed(() => user.value?.role === 'regulator');
 
 const panetaNavItems: NavItem[] = [
     {
@@ -99,6 +100,24 @@ const adminNavItems: NavItem[] = [
     },
 ];
 
+const regulatorNavItems: NavItem[] = [
+    {
+        title: 'Regulator Panel',
+        href: '/paneta/regulator',
+        icon: Shield,
+    },
+    {
+        title: 'All Transactions',
+        href: '/paneta/regulator/transactions',
+        icon: ArrowUpRight,
+    },
+    {
+        title: 'Audit Trail',
+        href: '/paneta/regulator/audit-trail',
+        icon: FileText,
+    },
+];
+
 const footerNavItems: NavItem[] = [];
 </script>
 
@@ -118,7 +137,7 @@ const footerNavItems: NavItem[] = [];
 
         <SidebarContent>
             <!-- PANÉTA Section (only for regular users) -->
-            <SidebarGroup v-if="!isAdmin" class="px-2 py-0">
+            <SidebarGroup v-if="!isAdmin && !isRegulator" class="px-2 py-0">
                 <SidebarGroupLabel>PANÉTA</SidebarGroupLabel>
                 <SidebarMenu>
                     <SidebarMenuItem v-for="item in panetaNavItems" :key="item.title">
@@ -137,6 +156,21 @@ const footerNavItems: NavItem[] = [];
                 <SidebarGroupLabel>Admin</SidebarGroupLabel>
                 <SidebarMenu>
                     <SidebarMenuItem v-for="item in adminNavItems" :key="item.title">
+                        <SidebarMenuButton as-child :tooltip="item.title">
+                            <Link :href="item.href">
+                                <component :is="item.icon" />
+                                <span>{{ item.title }}</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarGroup>
+
+            <!-- Regulator Section (only for regulators) -->
+            <SidebarGroup v-if="isRegulator" class="px-2 py-0">
+                <SidebarGroupLabel>Regulator</SidebarGroupLabel>
+                <SidebarMenu>
+                    <SidebarMenuItem v-for="item in regulatorNavItems" :key="item.title">
                         <SidebarMenuButton as-child :tooltip="item.title">
                             <Link :href="item.href">
                                 <component :is="item.icon" />

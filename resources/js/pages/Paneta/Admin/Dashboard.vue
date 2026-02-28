@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { BreadcrumbItem, AdminStats, TransactionIntent } from '@/types';
-import { Users, ArrowUpRight, CheckCircle, XCircle, DollarSign, TrendingUp, Coins, Wallet } from 'lucide-vue-next';
+import { Users, ArrowUpRight, CheckCircle, XCircle, DollarSign, TrendingUp, Coins, Wallet, Eye, AlertTriangle, Link2, UserCheck, Calendar, Globe, BarChart3 } from 'lucide-vue-next';
+import { ref, computed } from 'vue';
+import axios from 'axios';
 
 const props = defineProps<{
     stats: AdminStats;
@@ -16,6 +20,59 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Admin', href: '/paneta/admin' },
     { title: 'Dashboard' },
 ];
+
+const selectedPeriod = ref(props.stats.current_period || 'all');
+const showTransactionFeeModal = ref(false);
+const showSubscriptionModal = ref(false);
+const showAdsModal = ref(false);
+const revenueDetails = ref<any>(null);
+const loadingDetails = ref(false);
+
+const periodOptions = [
+    { value: 'all', label: 'All Time' },
+    { value: 'daily', label: 'Daily' },
+    { value: 'weekly', label: 'Weekly' },
+    { value: 'biweekly', label: 'Bi-Weekly' },
+    { value: 'monthly', label: 'Monthly' },
+    { value: 'quarterly', label: 'Quarterly' },
+    { value: 'yearly', label: 'Yearly' },
+    { value: '5year', label: '5-Year Tenure' },
+    { value: '10year', label: '10-Year Tenure' },
+];
+
+const changePeriod = () => {
+    router.get('/paneta/admin', { period: selectedPeriod.value }, { preserveState: true });
+};
+
+const viewTransactionFeeDetails = async () => {
+    loadingDetails.value = true;
+    try {
+        const response = await axios.get('/paneta/admin/revenue/transaction-fees', {
+            params: { period: selectedPeriod.value }
+        });
+        revenueDetails.value = response.data;
+        showTransactionFeeModal.value = true;
+    } catch (error) {
+        console.error('Failed to load transaction fee details:', error);
+    } finally {
+        loadingDetails.value = false;
+    }
+};
+
+const viewSubscriptionDetails = async () => {
+    loadingDetails.value = true;
+    try {
+        const response = await axios.get('/paneta/admin/revenue/subscriptions', {
+            params: { period: selectedPeriod.value }
+        });
+        revenueDetails.value = response.data;
+        showSubscriptionModal.value = true;
+    } catch (error) {
+        console.error('Failed to load subscription details:', error);
+    } finally {
+        loadingDetails.value = false;
+    }
+};
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -31,6 +88,16 @@ const formatDate = (dateString: string) => {
         hour: '2-digit',
         minute: '2-digit',
     });
+};
+
+const formatTime = (seconds: number) => {
+    if (seconds < 60) {
+        return `${Math.round(seconds)}s`;
+    } else if (seconds < 3600) {
+        return `${Math.round(seconds / 60)}m`;
+    } else {
+        return `${Math.round(seconds / 3600)}h`;
+    }
 };
 
 const getStatusColor = (status: string) => {
@@ -55,44 +122,115 @@ const getStatusColor = (status: string) => {
             <!-- Header -->
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-2xl font-bold">Regulator Dashboard</h1>
+                    <h1 class="text-2xl font-bold">Main Dashboard</h1>
                     <p class="text-muted-foreground">
-                        Read-only view of platform activity and compliance
+                        Comprehensive platform analytics and management
                     </p>
                 </div>
-                <Badge variant="outline" class="text-sm">
-                    Read-Only Access
-                </Badge>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <Calendar class="h-4 w-4 text-muted-foreground" />
+                        <select
+                            v-model="selectedPeriod"
+                            @change="changePeriod"
+                            class="rounded-md border px-3 py-1.5 text-sm"
+                        >
+                            <option v-for="option in periodOptions" :key="option.value" :value="option.value">
+                                {{ option.label }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
-            <!-- Platform Fees Section -->
-            <div class="grid gap-4 md:grid-cols-2">
+            <!-- Revenue Breakdown Section -->
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card class="border-accent/30 bg-gradient-to-br from-accent/5 to-accent/10">
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">Total Platform Fees (0.99%)</CardTitle>
-                        <Coins class="h-4 w-4 text-accent" />
+                        <CardTitle class="text-sm font-medium">Transaction Fees (0.99%)</CardTitle>
+                        <div class="flex items-center gap-2">
+                            <Coins class="h-4 w-4 text-accent" />
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="h-6 w-6 p-0"
+                                @click="viewTransactionFeeDetails"
+                            >
+                                <Eye class="h-3 w-3" />
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div class="text-2xl font-bold text-accent-foreground">
-                            {{ formatCurrency(stats.total_fees_collected || 0) }}
+                            {{ formatCurrency(stats.transaction_fees || 0) }}
                         </div>
                         <p class="text-xs text-muted-foreground">
-                            From {{ formatCurrency(stats.total_volume) }} total volume
+                            From {{ formatCurrency(stats.total_volume) }} volume
                         </p>
                     </CardContent>
                 </Card>
 
                 <Card class="border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
                     <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">Today's Fees Collected</CardTitle>
-                        <Wallet class="h-4 w-4 text-primary" />
+                        <CardTitle class="text-sm font-medium">Subscription Revenue</CardTitle>
+                        <div class="flex items-center gap-2">
+                            <UserCheck class="h-4 w-4 text-primary" />
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="h-6 w-6 p-0"
+                                @click="viewSubscriptionDetails"
+                            >
+                                <Eye class="h-3 w-3" />
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div class="text-2xl font-bold text-primary">
-                            {{ formatCurrency(stats.today_fees_collected || 0) }}
+                            {{ formatCurrency(stats.subscription_revenue || 0) }}
                         </div>
                         <p class="text-xs text-muted-foreground">
-                            From {{ formatCurrency(stats.today_volume) }} today's volume
+                            Active subscriptions
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card class="border-blue-500/30 bg-gradient-to-br from-blue-500/5 to-blue-500/10">
+                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle class="text-sm font-medium">Ads Revenue</CardTitle>
+                        <div class="flex items-center gap-2">
+                            <BarChart3 class="h-4 w-4 text-blue-500" />
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="h-6 w-6 p-0"
+                                @click="showAdsModal = true"
+                            >
+                                <Eye class="h-3 w-3" />
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div class="text-2xl font-bold text-blue-600">
+                            {{ formatCurrency(stats.ads_revenue || 0) }}
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                            Coming soon
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card class="border-green-500/30 bg-gradient-to-br from-green-500/5 to-green-500/10">
+                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle class="text-sm font-medium">Total Combined Revenue</CardTitle>
+                        <DollarSign class="h-4 w-4 text-green-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div class="text-2xl font-bold text-green-600">
+                            {{ formatCurrency(stats.total_revenue || 0) }}
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                            All revenue sources
                         </p>
                     </CardContent>
                 </Card>
@@ -164,36 +302,152 @@ const getStatusColor = (status: string) => {
                 </Card>
             </div>
 
-            <!-- Quick Stats -->
+            <!-- Users by Role -->
+            <Card>
+                <CardHeader>
+                    <CardTitle>Users by Role</CardTitle>
+                    <CardDescription>Platform user distribution</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div class="grid gap-4 md:grid-cols-3">
+                        <div v-for="(count, role) in stats.users_by_role" :key="role" class="flex flex-col">
+                            <span class="text-sm text-muted-foreground capitalize">{{ role }}</span>
+                            <span class="text-2xl font-bold">{{ count }}</span>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <!-- Demographics -->
+            <Card>
+                <CardHeader>
+                    <CardTitle>User Demographics</CardTitle>
+                    <CardDescription>Geographical and demographic distribution</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div class="grid gap-6 md:grid-cols-3">
+                        <div>
+                            <h4 class="mb-3 font-semibold flex items-center gap-2">
+                                <Globe class="h-4 w-4" />
+                                Top Countries
+                            </h4>
+                            <div class="space-y-2">
+                                <div v-if="stats.demographics.by_country.length > 0" v-for="item in stats.demographics.by_country.slice(0, 5)" :key="item.country" class="flex justify-between text-sm">
+                                    <span>{{ item.country || 'Unknown' }}</span>
+                                    <span class="font-medium">{{ item.count }}</span>
+                                </div>
+                                <div v-else class="text-sm text-muted-foreground py-4 text-center">
+                                    No country data available
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="mb-3 font-semibold">By Gender</h4>
+                            <div class="space-y-2">
+                                <div v-if="stats.demographics.by_gender.length > 0" v-for="item in stats.demographics.by_gender" :key="item.gender" class="flex justify-between text-sm">
+                                    <span class="capitalize">{{ item.gender || 'Not specified' }}</span>
+                                    <span class="font-medium">{{ item.count }}</span>
+                                </div>
+                                <div v-else class="text-sm text-muted-foreground py-4 text-center">
+                                    No gender data available
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="mb-3 font-semibold">By Age Group</h4>
+                            <div class="space-y-2">
+                                <div v-if="stats.demographics.by_age_group.length > 0" v-for="item in stats.demographics.by_age_group" :key="item.age_group" class="flex justify-between text-sm">
+                                    <span>{{ item.age_group }}</span>
+                                    <span class="font-medium">{{ item.count }}</span>
+                                </div>
+                                <div v-else class="text-sm text-muted-foreground py-4 text-center">
+                                    No age data available
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <!-- Linked Accounts Statistics -->
+            <Card>
+                <CardHeader>
+                    <CardTitle>Linked Accounts Statistics</CardTitle>
+                    <CardDescription>Account linking success and failure tracking</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div class="grid gap-4 md:grid-cols-4 mb-6">
+                        <div>
+                            <p class="text-sm text-muted-foreground">Total Linked</p>
+                            <p class="text-2xl font-bold">{{ stats.linked_accounts_stats.total }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-muted-foreground">Active</p>
+                            <p class="text-2xl font-bold text-green-600">{{ stats.linked_accounts_stats.active }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-muted-foreground">Failed</p>
+                            <p class="text-2xl font-bold text-red-600">{{ stats.linked_accounts_stats.failed }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-muted-foreground">Success Rate</p>
+                            <p class="text-2xl font-bold">{{ stats.linked_accounts_stats.success_rate }}%</p>
+                        </div>
+                    </div>
+                    <div v-if="stats.linked_accounts_stats.failure_reasons.length > 0">
+                        <h4 class="mb-3 font-semibold text-sm">Top Failure Reasons</h4>
+                        <div class="space-y-2">
+                            <div v-for="reason in stats.linked_accounts_stats.failure_reasons" :key="reason.reason" class="flex justify-between text-sm">
+                                <span>{{ reason.reason || 'Unknown' }}</span>
+                                <span class="font-medium">{{ reason.count }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <!-- Enhanced Transaction Breakdown -->
             <div class="grid gap-6 lg:grid-cols-2">
-                <!-- Transaction Breakdown -->
+                <!-- Enhanced Transaction Breakdown -->
                 <Card>
                     <CardHeader>
                         <CardTitle>Transaction Breakdown</CardTitle>
-                        <CardDescription>Status distribution</CardDescription>
+                        <CardDescription>Detailed status and performance metrics</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div class="space-y-4">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <div class="h-3 w-3 rounded-full bg-green-500" />
-                                    <span>Executed</span>
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="h-3 w-3 rounded-full bg-green-500" />
+                                        <span class="font-medium">Executed</span>
+                                    </div>
+                                    <span class="font-bold">{{ stats.transaction_stats.executed.count }}</span>
                                 </div>
-                                <span class="font-medium">{{ stats.executed_transactions }}</span>
+                                <div class="ml-5 text-xs text-muted-foreground">
+                                    Avg completion: {{ formatTime(stats.transaction_stats.executed.avg_completion_time) }}
+                                </div>
                             </div>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <div class="h-3 w-3 rounded-full bg-yellow-500" />
-                                    <span>Pending</span>
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="h-3 w-3 rounded-full bg-yellow-500" />
+                                        <span class="font-medium">Pending</span>
+                                    </div>
+                                    <span class="font-bold">{{ stats.transaction_stats.pending.count }}</span>
                                 </div>
-                                <span class="font-medium">{{ stats.pending_transactions }}</span>
+                                <div class="ml-5 text-xs text-muted-foreground">
+                                    Avg pending time: {{ formatTime(stats.transaction_stats.pending.avg_pending_time) }}
+                                </div>
                             </div>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <div class="h-3 w-3 rounded-full bg-red-500" />
-                                    <span>Failed</span>
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="h-3 w-3 rounded-full bg-red-500" />
+                                        <span class="font-medium">Failed</span>
+                                    </div>
+                                    <span class="font-bold">{{ stats.transaction_stats.failed.count }}</span>
                                 </div>
-                                <span class="font-medium">{{ stats.failed_transactions }}</span>
                             </div>
                         </div>
                     </CardContent>
@@ -238,7 +492,7 @@ const getStatusColor = (status: string) => {
                                             {{ transaction.reference }}
                                         </p>
                                         <p class="text-xs text-muted-foreground">
-                                            {{ formatDate(transaction.created_at) }}
+                                            {{ transaction.destination_institution?.name || 'Unknown' }}
                                         </p>
                                     </div>
                                 </div>
@@ -263,38 +517,157 @@ const getStatusColor = (status: string) => {
                 </Card>
             </div>
 
-            <!-- Admin Notice - PANÉTA Gold Accent (Premium/Regulatory) -->
-            <Card class="border-accent/30 bg-accent/5 dark:border-accent/40 dark:bg-accent/10">
-                <CardContent class="pt-6">
-                    <div class="flex items-start gap-4">
-                        <div class="rounded-full bg-accent/20 p-2 dark:bg-accent/30">
-                            <svg
-                                class="h-5 w-5 text-accent"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                                />
-                            </svg>
+            <!-- Flagged Transactions and Users -->
+            <Card>
+                <CardHeader>
+                    <CardTitle class="flex items-center gap-2">
+                        <AlertTriangle class="h-5 w-5 text-orange-500" />
+                        Flagged Transactions & Users
+                    </CardTitle>
+                    <CardDescription>Items requiring attention with recommended actions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div class="grid gap-6 lg:grid-cols-2">
+                        <div>
+                            <h4 class="mb-3 font-semibold text-sm">Flagged Transactions</h4>
+                            <div class="space-y-3">
+                                <div v-for="item in stats.flagged_data.transactions.slice(0, 5)" :key="item.id" class="rounded-lg border p-3">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="font-mono text-xs">{{ item.reference }}</span>
+                                        <Badge variant="destructive" class="text-xs">{{ item.recommended_action }}</Badge>
+                                    </div>
+                                    <p class="text-xs text-muted-foreground">{{ item.user_name }}</p>
+                                    <p class="text-xs mt-1">{{ item.reason }}</p>
+                                </div>
+                                <div v-if="stats.flagged_data.transactions.length === 0" class="text-center text-sm text-muted-foreground py-4">
+                                    No flagged transactions
+                                </div>
+                            </div>
                         </div>
                         <div>
-                            <h3 class="font-semibold text-accent-foreground dark:text-foreground">
-                                Regulator Access - Read Only
-                            </h3>
-                            <p class="text-sm text-muted-foreground">
-                                This dashboard provides read-only access to platform data for
-                                regulatory oversight. No modifications can be made from this
-                                interface. All data shown is from the immutable audit log.
-                            </p>
+                            <h4 class="mb-3 font-semibold text-sm">Flagged Users</h4>
+                            <div class="space-y-3">
+                                <div v-for="item in stats.flagged_data.users.slice(0, 5)" :key="item.id" class="rounded-lg border p-3">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="font-medium text-sm">{{ item.name }}</span>
+                                        <Badge :variant="item.is_suspended ? 'destructive' : 'outline'" class="text-xs">{{ item.recommended_action }}</Badge>
+                                    </div>
+                                    <p class="text-xs text-muted-foreground">{{ item.email }}</p>
+                                    <p class="text-xs mt-1">{{ item.reason }}</p>
+                                </div>
+                                <div v-if="stats.flagged_data.users.length === 0" class="text-center text-sm text-muted-foreground py-4">
+                                    No flagged users
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </CardContent>
             </Card>
+
+            <!-- Queries and Sanctioning Section -->
+            <Card>
+                <CardHeader>
+                    <CardTitle>Queries & Sanctioning</CardTitle>
+                    <CardDescription>User queries and compliance actions tracking</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div class="grid gap-6 md:grid-cols-3">
+                        <div class="rounded-lg border p-4">
+                            <h4 class="mb-2 font-semibold text-sm">User Queries</h4>
+                            <p class="text-3xl font-bold mb-2">{{ stats.flagged_data.transactions.length + stats.flagged_data.users.length }}</p>
+                            <p class="text-xs text-muted-foreground">Total queries raised</p>
+                        </div>
+                        <div class="rounded-lg border p-4">
+                            <h4 class="mb-2 font-semibold text-sm">Suspended Accounts</h4>
+                            <p class="text-3xl font-bold mb-2 text-red-600">{{ stats.flagged_data.users.filter(u => u.is_suspended).length }}</p>
+                            <p class="text-xs text-muted-foreground">Accounts under sanction</p>
+                        </div>
+                        <div class="rounded-lg border p-4">
+                            <h4 class="mb-2 font-semibold text-sm">High Risk Users</h4>
+                            <p class="text-3xl font-bold mb-2 text-orange-600">{{ stats.flagged_data.users.filter(u => u.risk_tier === 'high').length }}</p>
+                            <p class="text-xs text-muted-foreground">Requiring monitoring</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <!-- Modals -->
+            <Dialog v-model:open="showTransactionFeeModal">
+                <DialogContent class="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Transaction Fee Details</DialogTitle>
+                        <DialogDescription>Breakdown of transaction facilitation fees (0.99%)</DialogDescription>
+                    </DialogHeader>
+                    <div v-if="revenueDetails" class="space-y-4">
+                        <div class="rounded-lg bg-muted p-4">
+                            <p class="text-sm text-muted-foreground">Total Fees Collected</p>
+                            <p class="text-2xl font-bold">{{ formatCurrency(revenueDetails.total_fees) }}</p>
+                        </div>
+                        <div class="max-h-96 overflow-y-auto">
+                            <table class="w-full text-sm">
+                                <thead class="border-b">
+                                    <tr>
+                                        <th class="pb-2 text-left">Date</th>
+                                        <th class="pb-2 text-right">Transactions</th>
+                                        <th class="pb-2 text-right">Volume</th>
+                                        <th class="pb-2 text-right">Fees</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="detail in revenueDetails.details" :key="detail.date" class="border-b">
+                                        <td class="py-2">{{ detail.date }}</td>
+                                        <td class="py-2 text-right">{{ detail.transaction_count }}</td>
+                                        <td class="py-2 text-right">{{ formatCurrency(detail.total_volume) }}</td>
+                                        <td class="py-2 text-right font-medium">{{ formatCurrency(detail.fees_collected) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog v-model:open="showSubscriptionModal">
+                <DialogContent class="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Subscription Revenue Details</DialogTitle>
+                        <DialogDescription>Breakdown by subscription tier and user count</DialogDescription>
+                    </DialogHeader>
+                    <div v-if="revenueDetails" class="space-y-4">
+                        <div class="rounded-lg bg-muted p-4">
+                            <p class="text-sm text-muted-foreground">Total Subscription Revenue</p>
+                            <p class="text-2xl font-bold">{{ formatCurrency(revenueDetails.total_revenue) }}</p>
+                        </div>
+                        <div class="grid gap-4">
+                            <div v-for="detail in revenueDetails.details" :key="detail.code" class="rounded-lg border p-4">
+                                <div class="flex justify-between items-start mb-3">
+                                    <div>
+                                        <h4 class="font-semibold capitalize">{{ detail.tier }}</h4>
+                                        <p class="text-sm text-muted-foreground">{{ detail.user_count }} users</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-lg font-bold">{{ formatCurrency(detail.revenue) }}</p>
+                                        <p class="text-xs text-muted-foreground">{{ formatCurrency(detail.avg_revenue_per_user) }}/user</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog v-model:open="showAdsModal">
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Ads Revenue Details</DialogTitle>
+                        <DialogDescription>Advertisement revenue breakdown</DialogDescription>
+                    </DialogHeader>
+                    <div class="py-8 text-center text-muted-foreground">
+                        <p>Ads revenue feature coming soon</p>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
         </div>
     </AppLayout>
 </template>

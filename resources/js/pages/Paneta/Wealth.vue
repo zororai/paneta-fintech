@@ -52,7 +52,7 @@ import {
     Target,
     Activity
 } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 interface LinkedInstitution {
     id: number;
@@ -122,6 +122,15 @@ const selectedRegion = ref<string | null>(null);
 const selectedExchange = ref<string | null>(null);
 const selectedSecurity = ref<any | null>(null);
 const showSecurityDetail = ref(false);
+const showLinkTradingAccountDialog = ref(false);
+const linkingStep = ref<'search' | 'details' | 'consent' | 'success'>('search');
+const brokerSearchQuery = ref('');
+const selectedBroker = ref<any | null>(null);
+const tradingAccountForm = ref({
+    account_holder_name: '',
+    trading_account_number: '',
+    consent_agreed: false,
+});
 
 const currentTier = {
     name: 'Silver Tier',
@@ -160,6 +169,39 @@ const stockExchangesByRegion = {
         { id: 'nse', name: 'Nigerian Stock Exchange (NSE)', country: 'Nigeria', companies: 160 },
     ],
 };
+
+const globalBrokers = [
+    { id: 1, name: 'Interactive Brokers', country: 'USA', type: 'Global Broker', markets: ['Stocks', 'Options', 'Futures', 'Forex'], logo: '🌐' },
+    { id: 2, name: 'Charles Schwab', country: 'USA', type: 'Full-Service Broker', markets: ['Stocks', 'ETFs', 'Mutual Funds'], logo: '💼' },
+    { id: 3, name: 'TD Ameritrade', country: 'USA', type: 'Online Broker', markets: ['Stocks', 'Options', 'Futures'], logo: '📊' },
+    { id: 4, name: 'Fidelity Investments', country: 'USA', type: 'Full-Service Broker', markets: ['Stocks', 'Bonds', 'Mutual Funds'], logo: '🏦' },
+    { id: 5, name: 'E*TRADE', country: 'USA', type: 'Online Broker', markets: ['Stocks', 'Options', 'Futures'], logo: '💹' },
+    { id: 6, name: 'Saxo Bank', country: 'Denmark', type: 'Global Broker', markets: ['Stocks', 'Forex', 'CFDs'], logo: '🇩🇰' },
+    { id: 7, name: 'IG Group', country: 'UK', type: 'CFD Broker', markets: ['CFDs', 'Forex', 'Spread Betting'], logo: '🇬🇧' },
+    { id: 8, name: 'Plus500', country: 'Israel', type: 'CFD Broker', markets: ['CFDs', 'Forex', 'Crypto'], logo: '🇮🇱' },
+    { id: 9, name: 'eToro', country: 'Israel', type: 'Social Trading', markets: ['Stocks', 'Crypto', 'Commodities'], logo: '👥' },
+    { id: 10, name: 'Robinhood', country: 'USA', type: 'Commission-Free Broker', markets: ['Stocks', 'Options', 'Crypto'], logo: '🏹' },
+    { id: 11, name: 'Vanguard', country: 'USA', type: 'Investment Manager', markets: ['Mutual Funds', 'ETFs', 'Bonds'], logo: '⛵' },
+    { id: 12, name: 'BlackRock', country: 'USA', type: 'Asset Manager', markets: ['ETFs', 'Mutual Funds', 'Alternatives'], logo: '🪨' },
+    { id: 13, name: 'CMC Markets', country: 'UK', type: 'CFD Broker', markets: ['CFDs', 'Forex', 'Spread Betting'], logo: '📈' },
+    { id: 14, name: 'DEGIRO', country: 'Netherlands', type: 'Online Broker', markets: ['Stocks', 'ETFs', 'Bonds'], logo: '🇳🇱' },
+    { id: 15, name: 'Trading 212', country: 'UK', type: 'Commission-Free Broker', markets: ['Stocks', 'ETFs', 'CFDs'], logo: '🎯' },
+    { id: 16, name: 'XTB', country: 'Poland', type: 'Forex & CFD Broker', markets: ['Forex', 'CFDs', 'Stocks'], logo: '🇵🇱' },
+    { id: 17, name: 'OANDA', country: 'USA', type: 'Forex Broker', markets: ['Forex', 'CFDs'], logo: '💱' },
+    { id: 18, name: 'Questrade', country: 'Canada', type: 'Online Broker', markets: ['Stocks', 'Options', 'ETFs'], logo: '🇨🇦' },
+    { id: 19, name: 'Wealthsimple', country: 'Canada', type: 'Robo-Advisor', markets: ['Stocks', 'ETFs', 'Crypto'], logo: '🤖' },
+    { id: 20, name: 'Standard Bank Securities', country: 'South Africa', type: 'Full-Service Broker', markets: ['JSE Stocks', 'Bonds', 'ETFs'], logo: '🇿🇦' },
+];
+
+const filteredBrokers = computed(() => {
+    if (!brokerSearchQuery.value) return globalBrokers;
+    const query = brokerSearchQuery.value.toLowerCase();
+    return globalBrokers.filter(broker => 
+        broker.name.toLowerCase().includes(query) ||
+        broker.country.toLowerCase().includes(query) ||
+        broker.type.toLowerCase().includes(query)
+    );
+});
 
 const sampleSecurities: Record<string, any[]> = {
     'nyse': [
@@ -208,6 +250,69 @@ const selectExchange = (exchangeId: string) => {
 const viewSecurityDetail = (security: any) => {
     selectedSecurity.value = security;
     showSecurityDetail.value = true;
+};
+
+const openLinkTradingAccountDialog = () => {
+    showLinkTradingAccountDialog.value = true;
+    linkingStep.value = 'search';
+    brokerSearchQuery.value = '';
+    selectedBroker.value = null;
+    tradingAccountForm.value = {
+        account_holder_name: '',
+        trading_account_number: '',
+        consent_agreed: false,
+    };
+};
+
+const selectBroker = (broker: any) => {
+    selectedBroker.value = broker;
+    linkingStep.value = 'details';
+};
+
+const backToSearch = () => {
+    linkingStep.value = 'search';
+    selectedBroker.value = null;
+};
+
+const proceedToConsent = () => {
+    if (!tradingAccountForm.value.account_holder_name || !tradingAccountForm.value.trading_account_number) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    linkingStep.value = 'consent';
+};
+
+const backToDetails = () => {
+    linkingStep.value = 'details';
+};
+
+const linkTradingAccount = () => {
+    if (!tradingAccountForm.value.consent_agreed) {
+        alert('Please agree to the consent form to proceed');
+        return;
+    }
+    
+    // Here you would make an API call to link the account
+    // For now, we'll simulate success
+    linkingStep.value = 'success';
+    
+    // In a real implementation:
+    // router.post('/paneta/wealth/link-trading-account', {
+    //     broker_id: selectedBroker.value.id,
+    //     account_holder_name: tradingAccountForm.value.account_holder_name,
+    //     trading_account_number: tradingAccountForm.value.trading_account_number,
+    // });
+};
+
+const closeLinkDialog = () => {
+    showLinkTradingAccountDialog.value = false;
+    linkingStep.value = 'search';
+    selectedBroker.value = null;
+    tradingAccountForm.value = {
+        account_holder_name: '',
+        trading_account_number: '',
+        consent_agreed: false,
+    };
 };
 
 const redirectToMarketIntegration = () => {
@@ -1446,6 +1551,14 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                             </p>
                         </div>
                         <div class="flex gap-2">
+                            <Button 
+                                variant="default" 
+                                class="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                                @click="openLinkTradingAccountDialog"
+                            >
+                                <Globe class="h-4 w-4" />
+                                Link Global Market Trading Account
+                            </Button>
                             <Button variant="outline" class="gap-2">
                                 <Activity class="h-4 w-4" />
                                 Blockchain Integration
@@ -1591,6 +1704,289 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            <!-- Link Global Market Trading Account Dialog -->
+            <Dialog :open="showLinkTradingAccountDialog" @update:open="closeLinkDialog">
+                <DialogContent class="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <!-- Step 1: Search for Broker -->
+                    <div v-if="linkingStep === 'search'">
+                        <DialogHeader>
+                            <DialogTitle class="flex items-center gap-2">
+                                <Globe class="h-5 w-5" />
+                                Link Global Market Trading Account
+                            </DialogTitle>
+                            <DialogDescription>
+                                Search for your broker or investment platform to link your trading account
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div class="mt-6 space-y-4">
+                            <!-- Search Input -->
+                            <div>
+                                <label class="text-sm font-medium mb-2 block">Search for Broker or Investment Platform</label>
+                                <input 
+                                    v-model="brokerSearchQuery"
+                                    type="text"
+                                    placeholder="e.g., Interactive Brokers, Charles Schwab, Standard Bank..."
+                                    class="w-full rounded-md border px-4 py-2"
+                                />
+                            </div>
+
+                            <!-- Broker List -->
+                            <div class="space-y-2 max-h-96 overflow-y-auto">
+                                <div 
+                                    v-for="broker in filteredBrokers" 
+                                    :key="broker.id"
+                                    @click="selectBroker(broker)"
+                                    class="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                                >
+                                    <div class="flex items-center gap-3">
+                                        <div class="text-3xl">{{ broker.logo }}</div>
+                                        <div>
+                                            <p class="font-medium">{{ broker.name }}</p>
+                                            <p class="text-sm text-muted-foreground">{{ broker.type }} • {{ broker.country }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex flex-wrap gap-1">
+                                        <Badge v-for="market in broker.markets.slice(0, 3)" :key="market" variant="outline" class="text-xs">
+                                            {{ market }}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Account Details -->
+                    <div v-if="linkingStep === 'details'">
+                        <DialogHeader>
+                            <DialogTitle class="flex items-center gap-2">
+                                <Globe class="h-5 w-5" />
+                                Link Account - {{ selectedBroker?.name }}
+                            </DialogTitle>
+                            <DialogDescription>
+                                Enter your trading account details
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div class="mt-6 space-y-4">
+                            <!-- Selected Broker Display -->
+                            <div class="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                                <div class="text-3xl">{{ selectedBroker?.logo }}</div>
+                                <div>
+                                    <p class="font-medium">{{ selectedBroker?.name }}</p>
+                                    <p class="text-sm text-muted-foreground">{{ selectedBroker?.type }} • {{ selectedBroker?.country }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Account Holder Name -->
+                            <div>
+                                <label class="text-sm font-medium mb-2 block">Account Holder Name <span class="text-red-500">*</span></label>
+                                <input 
+                                    v-model="tradingAccountForm.account_holder_name"
+                                    type="text"
+                                    placeholder="Enter your full name as it appears on your account"
+                                    class="w-full rounded-md border px-4 py-2"
+                                />
+                            </div>
+
+                            <!-- Trading Account Number -->
+                            <div>
+                                <label class="text-sm font-medium mb-2 block">Trading Account Number <span class="text-red-500">*</span></label>
+                                <input 
+                                    v-model="tradingAccountForm.trading_account_number"
+                                    type="text"
+                                    placeholder="Enter your trading account number"
+                                    class="w-full rounded-md border px-4 py-2"
+                                />
+                            </div>
+
+                            <div class="flex items-start gap-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <AlertTriangle class="h-5 w-5 text-blue-600 mt-0.5" />
+                                <div class="text-sm text-blue-900">
+                                    <p class="font-medium">Read-Only Access</p>
+                                    <p class="text-blue-800 mt-1">
+                                        PANÉTA will only read your portfolio data. We cannot execute trades or move funds from your account.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter class="mt-6">
+                            <Button variant="outline" @click="backToSearch">
+                                Back
+                            </Button>
+                            <Button @click="proceedToConsent">
+                                Continue
+                            </Button>
+                        </DialogFooter>
+                    </div>
+
+                    <!-- Step 3: Consent Form -->
+                    <div v-if="linkingStep === 'consent'">
+                        <DialogHeader>
+                            <DialogTitle class="flex items-center gap-2">
+                                <Shield class="h-5 w-5" />
+                                Consent & Authorization
+                            </DialogTitle>
+                            <DialogDescription>
+                                Please review and agree to the terms before linking your account
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div class="mt-6 space-y-4">
+                            <!-- Consent Form Content -->
+                            <div class="border rounded-lg p-6 max-h-96 overflow-y-auto bg-muted/30">
+                                <h3 class="font-semibold text-lg mb-4">Account Linking Consent Form</h3>
+                                
+                                <div class="space-y-4 text-sm">
+                                    <div>
+                                        <h4 class="font-semibold mb-2">1. Data Access Authorization</h4>
+                                        <p class="text-muted-foreground">
+                                            I authorize PANÉTA to access my trading account data from {{ selectedBroker?.name }} for the purpose of portfolio aggregation, analysis, and decision support. This includes but is not limited to: account balances, holdings, transaction history, and performance metrics.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="font-semibold mb-2">2. Read-Only Access</h4>
+                                        <p class="text-muted-foreground">
+                                            I understand that PANÉTA operates on a zero-custody, read-only basis. PANÉTA cannot and will not execute trades, transfer funds, or make any changes to my trading account at {{ selectedBroker?.name }}.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="font-semibold mb-2">3. Data Security & Privacy</h4>
+                                        <p class="text-muted-foreground">
+                                            I acknowledge that PANÉTA will securely store and encrypt my account credentials and data. My information will not be shared with third parties without my explicit consent, except as required by law or regulatory authorities.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="font-semibold mb-2">4. Account Holder Verification</h4>
+                                        <p class="text-muted-foreground">
+                                            I confirm that I am the authorized account holder of trading account number {{ tradingAccountForm.trading_account_number }} at {{ selectedBroker?.name }}, and that the information provided is accurate and complete.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="font-semibold mb-2">5. Regulatory Compliance</h4>
+                                        <p class="text-muted-foreground">
+                                            I understand that PANÉTA may share aggregated and anonymized data with regulatory authorities for compliance and oversight purposes, in accordance with applicable financial regulations.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="font-semibold mb-2">6. Revocation Rights</h4>
+                                        <p class="text-muted-foreground">
+                                            I may revoke this authorization at any time by disconnecting my account through the PANÉTA platform. Upon revocation, PANÉTA will cease accessing my account data and securely delete stored credentials.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="font-semibold mb-2">7. Liability Disclaimer</h4>
+                                        <p class="text-muted-foreground">
+                                            I acknowledge that PANÉTA provides decision support tools only and does not provide investment advice. I am solely responsible for all investment decisions made using PANÉTA's platform.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Consent Checkbox -->
+                            <div class="flex items-start gap-3 p-4 border-2 rounded-lg">
+                                <input 
+                                    v-model="tradingAccountForm.consent_agreed"
+                                    type="checkbox"
+                                    id="consent-checkbox"
+                                    class="mt-1"
+                                />
+                                <label for="consent-checkbox" class="text-sm cursor-pointer">
+                                    <span class="font-medium">I have read and agree to the terms above.</span>
+                                    <span class="text-muted-foreground block mt-1">
+                                        By checking this box, I authorize PANÉTA to link my trading account at {{ selectedBroker?.name }} and access my portfolio data for decision support purposes.
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <DialogFooter class="mt-6">
+                            <Button variant="outline" @click="backToDetails">
+                                Back
+                            </Button>
+                            <Button 
+                                @click="linkTradingAccount"
+                                :disabled="!tradingAccountForm.consent_agreed"
+                            >
+                                Link Account
+                            </Button>
+                        </DialogFooter>
+                    </div>
+
+                    <!-- Step 4: Success -->
+                    <div v-if="linkingStep === 'success'">
+                        <DialogHeader>
+                            <DialogTitle class="flex items-center gap-2 text-green-600">
+                                <CheckCircle class="h-5 w-5" />
+                                Account Linked Successfully!
+                            </DialogTitle>
+                            <DialogDescription>
+                                Your trading account has been connected to PANÉTA
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div class="mt-6 space-y-4">
+                            <div class="flex flex-col items-center justify-center py-8">
+                                <div class="rounded-full bg-green-100 p-4 mb-4">
+                                    <CheckCircle class="h-12 w-12 text-green-600" />
+                                </div>
+                                <h3 class="text-xl font-semibold mb-2">Account Successfully Linked!</h3>
+                                <p class="text-muted-foreground text-center max-w-md">
+                                    Your {{ selectedBroker?.name }} trading account has been connected. Your portfolio data will be synced and available in the Portfolio Management section.
+                                </p>
+                            </div>
+
+                            <div class="border rounded-lg p-4 bg-muted/30">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="text-3xl">{{ selectedBroker?.logo }}</div>
+                                    <div>
+                                        <p class="font-medium">{{ selectedBroker?.name }}</p>
+                                        <p class="text-sm text-muted-foreground">{{ selectedBroker?.type }}</p>
+                                    </div>
+                                </div>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-muted-foreground">Account Holder:</span>
+                                        <span class="font-medium">{{ tradingAccountForm.account_holder_name }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-muted-foreground">Account Number:</span>
+                                        <span class="font-medium">{{ tradingAccountForm.trading_account_number }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-muted-foreground">Status:</span>
+                                        <Badge class="bg-green-100 text-green-700">Connected</Badge>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <Activity class="h-5 w-5 text-blue-600 mt-0.5" />
+                                <div class="text-sm text-blue-900">
+                                    <p class="font-medium">Next Steps</p>
+                                    <p class="text-blue-800 mt-1">
+                                        Your portfolio data is being synced. This may take a few minutes. You can view your consolidated portfolio in the Portfolio Management tab.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter class="mt-6">
+                            <Button @click="closeLinkDialog" class="w-full">
+                                Done
+                            </Button>
+                        </DialogFooter>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     </AppLayout>
 </template>
