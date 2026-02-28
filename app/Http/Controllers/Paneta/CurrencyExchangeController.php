@@ -37,7 +37,10 @@ class CurrencyExchangeController extends Controller
         // Get active P2P offers with user information
         $p2pOffers = FxOffer::with('user')
             ->where('status', 'open')
-            ->where('expires_at', '>', now())
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
+            })
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($offer) {
@@ -51,15 +54,17 @@ class CurrencyExchangeController extends Controller
                     ],
                     'sell_currency' => $offer->sell_currency,
                     'buy_currency' => $offer->buy_currency,
-                    'rate' => $offer->rate,
-                    'amount' => $offer->amount,
-                    'min_amount' => $offer->min_amount ?? 100,
-                    'max_amount' => $offer->amount,
+                    'rate' => (float) $offer->rate,
+                    'amount' => (float) $offer->amount,
+                    'min_amount' => $offer->min_amount ? (float) $offer->min_amount : 100,
+                    'max_amount' => (float) $offer->amount,
                     'settlement_methods' => $offer->settlement_methods ?? [],
-                    'expires_at' => $offer->expires_at,
+                    'expires_at' => $offer->expires_at ? $offer->expires_at->toISOString() : null,
                     'status' => $offer->status,
                 ];
-            });
+            })
+            ->values()
+            ->toArray();
 
         return Inertia::render('Paneta/CurrencyExchange', [
             'linkedAccounts' => $linkedAccounts,

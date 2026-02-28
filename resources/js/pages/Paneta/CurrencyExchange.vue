@@ -62,6 +62,17 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Currency Exchange' },
 ];
 
+// Debug logging
+console.log('=== P2P OFFERS DEBUG ===');
+console.log('p2pOffers exists:', !!props.p2pOffers);
+console.log('p2pOffers value:', props.p2pOffers);
+console.log('p2pOffers type:', typeof props.p2pOffers);
+console.log('Is Array:', Array.isArray(props.p2pOffers));
+console.log('Length:', props.p2pOffers?.length);
+console.log('First offer:', props.p2pOffers?.[0]);
+console.log('Condition check (!p2pOffers || length === 0):', !props.p2pOffers || props.p2pOffers.length === 0);
+console.log('========================');
+
 const quotes = ref<FxQuote[]>([]);
 const isLoading = ref(false);
 const selectedQuote = ref<FxQuote | null>(null);
@@ -452,74 +463,94 @@ const formatTimeAgo = (date: string) => {
                         <p class="text-sm text-muted-foreground">Create an offer in the "Create Offer" tab to get started</p>
                     </div>
 
-                    <div v-else class="space-y-4">
+                    <div v-else class="space-y-3">
                         <Card 
                             v-for="offer in p2pOffers" 
                             :key="offer.id"
-                            class="hover:shadow-md transition-shadow"
+                            class="hover:shadow-lg transition-all border-l-4 border-l-transparent hover:border-l-primary"
                         >
-                            <CardContent class="p-6">
-                                <div class="flex items-start justify-between gap-6">
+                            <CardContent class="p-5">
+                                <div class="flex items-start justify-between gap-8">
                                     <!-- User Info -->
-                                    <div class="flex items-start gap-4">
-                                        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-lg">
-                                            {{ offer.user.name.split(' ').map(n => n[0]).join('').toUpperCase() }}
+                                    <div class="flex items-start gap-3 flex-1">
+                                        <!-- Avatar with online indicator -->
+                                        <div class="relative">
+                                            <div class="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white font-bold text-xl shadow-md">
+                                                {{ offer.user.name.split(' ').map(n => n[0]).join('').toUpperCase() }}
+                                            </div>
+                                            <div class="absolute bottom-0 right-0 h-4 w-4 bg-green-500 border-2 border-white rounded-full"></div>
                                         </div>
-                                        <div class="space-y-1">
+
+                                        <div class="flex-1 space-y-2">
+                                            <!-- Name and verification -->
                                             <div class="flex items-center gap-2">
-                                                <h3 class="font-semibold text-lg">{{ offer.user.name }}</h3>
-                                                <Badge variant="outline" class="flex items-center gap-1">
-                                                    <svg class="h-3 w-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                <h3 class="font-semibold text-base">{{ offer.user.name }}</h3>
+                                                <svg class="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                </svg>
+                                                <span class="text-yellow-500 font-semibold text-sm">★ {{ offer.user.trust_score }}</span>
+                                            </div>
+
+                                            <!-- Location and stats -->
+                                            <div class="flex items-center gap-3 text-xs">
+                                                <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-200">
+                                                    <svg class="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                                                     </svg>
-                                                    {{ offer.user.trust_score }}
+                                                    {{ offer.user.location }}
                                                 </Badge>
+                                                <span class="text-muted-foreground">Trust Score: {{ (offer.user.trust_score * 20).toFixed(0) }}%</span>
+                                                <span class="text-muted-foreground">{{ offer.user.total_trades }} trades</span>
                                             </div>
-                                            <div class="flex items-center gap-3 text-sm text-muted-foreground">
-                                                <span>📍 {{ offer.user.location }}</span>
-                                                <span>Trust Score: {{ (offer.user.trust_score * 20).toFixed(0) }}%</span>
-                                                <span>{{ offer.user.total_trades }} trades</span>
-                                            </div>
-                                            <p class="text-sm text-muted-foreground">
+
+                                            <!-- Description -->
+                                            <p class="text-sm text-muted-foreground leading-relaxed">
                                                 Premium Zimbabwean trader with instant processing. Bank-verified rates. Available 24/7.
                                             </p>
-                                            <div class="flex gap-2 mt-2">
+
+                                            <!-- Settlement methods -->
+                                            <div v-if="offer.settlement_methods && offer.settlement_methods.length > 0" class="flex gap-2">
                                                 <Badge 
                                                     v-for="method in offer.settlement_methods" 
                                                     :key="method"
                                                     variant="secondary"
-                                                    class="text-xs"
+                                                    class="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200"
                                                 >
-                                                    {{ method === 'bank' ? 'Bank Transfer' : method === 'mobile_wallet' ? 'Mobile Money' : 'Cash' }}
+                                                    {{ method === 'bank' ? 'Bank Transfer' : method === 'mobile_wallet' ? 'Mobile Money' : method === 'card' ? 'Cash' : method }}
                                                 </Badge>
                                             </div>
                                         </div>
                                     </div>
 
                                     <!-- Exchange Rate & Actions -->
-                                    <div class="flex flex-col items-end gap-3 min-w-[280px]">
-                                        <div class="text-right">
-                                            <div class="text-3xl font-bold text-primary">
-                                                1 {{ offer.sell_currency }} = {{ offer.rate.toFixed(1) }} {{ offer.buy_currency }}
-                                            </div>
-                                            <div class="text-sm text-muted-foreground mt-1">
-                                                Min: {{ offer.min_amount }} - Max: {{ offer.max_amount.toLocaleString() }}
-                                            </div>
-                                            <div class="flex items-center justify-end gap-1 text-xs text-muted-foreground mt-1">
-                                                <Clock class="h-3 w-3" />
-                                                <span>{{ formatTimeAgo(offer.expires_at) }}</span>
+                                    <div class="flex flex-col items-end gap-3 min-w-[300px]">
+                                        <!-- Rate card -->
+                                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 w-full border border-blue-100">
+                                            <div class="text-right space-y-1">
+                                                <div class="text-2xl font-bold text-blue-900">
+                                                    1 {{ offer.sell_currency }} = {{ offer.rate.toFixed(4) }} {{ offer.buy_currency }}
+                                                </div>
+                                                <div class="text-xs text-blue-700">
+                                                    Min: {{ offer.min_amount }} - Max: {{ offer.max_amount.toLocaleString() }}
+                                                </div>
+                                                <div class="flex items-center justify-end gap-1 text-xs text-orange-600 font-medium">
+                                                    <Clock class="h-3 w-3" />
+                                                    <span>{{ formatTimeAgo(offer.expires_at) }} escrow</span>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="flex gap-2 w-full">
-                                            <Button variant="outline" size="sm" class="flex-1">
-                                                <ArrowRightLeft class="mr-1 h-4 w-4" />
-                                                Negotiate Rate
-                                            </Button>
-                                            <Button size="sm" class="flex-1 bg-blue-600 hover:bg-blue-700">
-                                                <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+                                        <!-- Action buttons -->
+                                        <div class="flex flex-col gap-2 w-full">
+                                            <Button size="sm" class="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md">
+                                                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                                                 </svg>
                                                 Start Exchange
+                                            </Button>
+                                            <Button variant="ghost" size="sm" class="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                                <ArrowRightLeft class="mr-2 h-4 w-4" />
+                                                Negotiate Rate
                                             </Button>
                                         </div>
                                     </div>
