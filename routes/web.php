@@ -13,8 +13,10 @@ use App\Http\Controllers\Paneta\P2PEscrowController;
 use App\Http\Controllers\Paneta\FXMarketplaceController;
 use App\Http\Controllers\Paneta\DemoController;
 use App\Http\Controllers\Paneta\RegulatorController;
+use App\Http\Controllers\Paneta\ServiceProviderController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsRegulator;
+use App\Http\Middleware\EnsureUserIsServiceProvider;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -192,6 +194,14 @@ Route::middleware(['auth', 'verified'])->prefix('paneta')->name('paneta.')->grou
         Route::get('/transactions', [RegulatorController::class, 'transactions'])->name('transactions');
         Route::get('/audit-trail', [RegulatorController::class, 'auditTrail'])->name('audit-trail');
         Route::get('/reports/generate', [RegulatorController::class, 'generateReport'])->name('reports.generate');
+    });
+
+    // Service Provider Routes (FX Providers)
+    Route::middleware(EnsureUserIsServiceProvider::class)->prefix('service-provider')->name('service-provider.')->group(function () {
+        Route::get('/', [ServiceProviderController::class, 'dashboard'])->name('dashboard');
+        Route::get('/offers', [ServiceProviderController::class, 'offers'])->name('offers');
+        Route::get('/trades', [ServiceProviderController::class, 'trades'])->name('trades');
+        Route::get('/reports', [ServiceProviderController::class, 'reports'])->name('reports');
     });
 });
 

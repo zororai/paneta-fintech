@@ -23,6 +23,7 @@ const page = usePage();
 const user = computed(() => page.props.auth?.user as { role?: string } | undefined);
 const isAdmin = computed(() => user.value?.role === 'admin');
 const isRegulator = computed(() => user.value?.role === 'regulator');
+const isServiceProvider = computed(() => user.value?.role === 'fx_provider');
 
 const panetaNavItems: NavItem[] = [
     {
@@ -118,6 +119,29 @@ const regulatorNavItems: NavItem[] = [
     },
 ];
 
+const serviceProviderNavItems: NavItem[] = [
+    {
+        title: 'Provider Dashboard',
+        href: '/paneta/service-provider',
+        icon: LayoutGrid,
+    },
+    {
+        title: 'FX Offers',
+        href: '/paneta/service-provider/offers',
+        icon: TrendingUp,
+    },
+    {
+        title: 'Trade Requests',
+        href: '/paneta/service-provider/trades',
+        icon: ArrowRightLeft,
+    },
+    {
+        title: 'Business Reports',
+        href: '/paneta/service-provider/reports',
+        icon: FileText,
+    },
+];
+
 const footerNavItems: NavItem[] = [];
 </script>
 
@@ -171,6 +195,21 @@ const footerNavItems: NavItem[] = [];
                 <SidebarGroupLabel>Regulator</SidebarGroupLabel>
                 <SidebarMenu>
                     <SidebarMenuItem v-for="item in regulatorNavItems" :key="item.title">
+                        <SidebarMenuButton as-child :tooltip="item.title">
+                            <Link :href="item.href">
+                                <component :is="item.icon" />
+                                <span>{{ item.title }}</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarGroup>
+
+            <!-- Service Provider Section (only for FX providers) -->
+            <SidebarGroup v-if="isServiceProvider" class="px-2 py-0">
+                <SidebarGroupLabel>Service Provider</SidebarGroupLabel>
+                <SidebarMenu>
+                    <SidebarMenuItem v-for="item in serviceProviderNavItems" :key="item.title">
                         <SidebarMenuButton as-child :tooltip="item.title">
                             <Link :href="item.href">
                                 <component :is="item.icon" />
