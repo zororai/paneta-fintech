@@ -24,8 +24,10 @@ class P2PMarketplaceEngine
         float $rate,
         float $amount,
         ?float $minAmount = null,
-        ?int $expiresInHours = 24,
-        ?string $idempotencyKey = null
+        ?int $expiresInDays = 7,
+        ?string $idempotencyKey = null,
+        ?LinkedAccount $destinationAccount = null,
+        array $settlementMethods = []
     ): FxOfferResult {
         if ($idempotencyKey) {
             $existing = FxOffer::where('idempotency_key', $idempotencyKey)->first();
@@ -36,6 +38,10 @@ class P2PMarketplaceEngine
 
         if ($sourceAccount->user_id !== $user->id) {
             return new FxOfferResult(success: false, error: 'Account does not belong to user');
+        }
+
+        if ($destinationAccount && $destinationAccount->user_id !== $user->id) {
+            return new FxOfferResult(success: false, error: 'Destination account does not belong to user');
         }
 
         if ($sourceAccount->currency !== $sellCurrency) {
@@ -49,6 +55,7 @@ class P2PMarketplaceEngine
         $offer = FxOffer::create([
             'user_id' => $user->id,
             'source_account_id' => $sourceAccount->id,
+            'destination_account_id' => $destinationAccount?->id,
             'sell_currency' => $sellCurrency,
             'buy_currency' => $buyCurrency,
             'rate' => $rate,
@@ -56,7 +63,8 @@ class P2PMarketplaceEngine
             'min_amount' => $minAmount,
             'filled_amount' => 0,
             'status' => 'open',
-            'expires_at' => $expiresInHours ? now()->addHours($expiresInHours) : null,
+            'expires_at' => $expiresInDays ? now()->addDays($expiresInDays) : null,
+            'settlement_methods' => $settlementMethods,
             'idempotency_key' => $idempotencyKey,
         ]);
 

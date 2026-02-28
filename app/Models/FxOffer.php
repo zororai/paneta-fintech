@@ -15,6 +15,7 @@ class FxOffer extends Model
     protected $fillable = [
         'user_id',
         'source_account_id',
+        'destination_account_id',
         'sell_currency',
         'buy_currency',
         'rate',
@@ -22,6 +23,7 @@ class FxOffer extends Model
         'min_amount',
         'filled_amount',
         'status',
+        'settlement_methods',
         'matched_offer_id',
         'matched_user_id',
         'expires_at',
@@ -34,6 +36,7 @@ class FxOffer extends Model
         'min_amount' => 'decimal:2',
         'filled_amount' => 'decimal:2',
         'expires_at' => 'datetime',
+        'settlement_methods' => 'array',
     ];
 
     const STATE_TRANSITIONS = [
@@ -54,6 +57,11 @@ class FxOffer extends Model
     public function sourceAccount(): BelongsTo
     {
         return $this->belongsTo(LinkedAccount::class, 'source_account_id');
+    }
+
+    public function destinationAccount(): BelongsTo
+    {
+        return $this->belongsTo(LinkedAccount::class, 'destination_account_id');
     }
 
     public function matchedOffer(): BelongsTo

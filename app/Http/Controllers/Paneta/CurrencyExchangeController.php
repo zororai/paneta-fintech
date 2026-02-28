@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Institution;
 use App\Models\LinkedAccount;
 use App\Models\FxQuote;
+use App\Models\FxOffer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -33,12 +34,40 @@ class CurrencyExchangeController extends Controller
 
         $currencies = ['USD', 'EUR', 'GBP', 'ZAR', 'ZWL', 'KES', 'NGN'];
 
+        // Get active P2P offers with user information
+        $p2pOffers = FxOffer::with('user')
+            ->where('status', 'open')
+            ->where('expires_at', '>', now())
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($offer) {
+                return [
+                    'id' => $offer->id,
+                    'user' => [
+                        'name' => $offer->user->name,
+                        'location' => 'Zimbabwe', // Mock data
+                        'trust_score' => 4.9, // Mock data
+                        'total_trades' => rand(100, 2000), // Mock data
+                    ],
+                    'sell_currency' => $offer->sell_currency,
+                    'buy_currency' => $offer->buy_currency,
+                    'rate' => $offer->rate,
+                    'amount' => $offer->amount,
+                    'min_amount' => $offer->min_amount ?? 100,
+                    'max_amount' => $offer->amount,
+                    'settlement_methods' => $offer->settlement_methods ?? [],
+                    'expires_at' => $offer->expires_at,
+                    'status' => $offer->status,
+                ];
+            });
+
         return Inertia::render('Paneta/CurrencyExchange', [
             'linkedAccounts' => $linkedAccounts,
             'fxProviders' => $fxProviders,
             'recentQuotes' => $recentQuotes,
             'currencies' => $currencies,
             'panetaFeePercent' => 0.99,
+            'p2pOffers' => $p2pOffers,
         ]);
     }
 

@@ -29,12 +29,32 @@ interface FxQuote {
     expires_at: string;
 }
 
+interface P2POffer {
+    id: number;
+    user: {
+        name: string;
+        location: string;
+        trust_score: number;
+        total_trades: number;
+    };
+    sell_currency: string;
+    buy_currency: string;
+    rate: number;
+    amount: number;
+    min_amount: number;
+    max_amount: number;
+    settlement_methods: string[];
+    expires_at: string;
+    status: string;
+}
+
 const props = defineProps<{
     linkedAccounts: LinkedAccount[];
     fxProviders: Institution[];
     recentQuotes: any[];
     currencies: string[];
     panetaFeePercent: number;
+    p2pOffers?: P2POffer[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -45,6 +65,18 @@ const breadcrumbs: BreadcrumbItem[] = [
 const quotes = ref<FxQuote[]>([]);
 const isLoading = ref(false);
 const selectedQuote = ref<FxQuote | null>(null);
+
+const offerForm = useForm({
+    source_account_id: null as number | null,
+    destination_account_id: null as number | null,
+    sell_currency: 'USD',
+    buy_currency: 'ZWL',
+    rate: 0,
+    amount: 100,
+    min_amount: 10,
+    settlement_methods: [] as string[],
+    expires_in_days: 7,
+});
 
 const form = useForm({
     source_account_id: null as number | null,
@@ -110,6 +142,32 @@ const confirmExchange = () => {
     if (!selectedQuote.value) return;
     alert('FX instruction generated. Note: PANÉTA does not execute trades - this generates a signed instruction for external execution.');
 };
+
+const toggleSettlementMethod = (method: string) => {
+    const index = offerForm.settlement_methods.indexOf(method);
+    if (index > -1) {
+        offerForm.settlement_methods.splice(index, 1);
+    } else {
+        offerForm.settlement_methods.push(method);
+    }
+};
+
+const createOffer = () => {
+    offerForm.post('/paneta/p2p-escrow/offers', {
+        onSuccess: () => {
+            offerForm.reset();
+        },
+    });
+};
+
+const formatTimeAgo = (date: string) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diff = Math.floor((now.getTime() - then.getTime()) / 60000);
+    if (diff < 60) return `${diff} mins ago`;
+    if (diff < 1440) return `${Math.floor(diff / 60)} hours ago`;
+    return `${Math.floor(diff / 1440)} days ago`;
+};
 </script>
 
 <template>
@@ -153,224 +211,322 @@ const confirmExchange = () => {
 
                 <!-- Create Offer Tab -->
                 <TabsContent value="create-offer" class="space-y-6">
-
-                    <div class="grid gap-6 lg:grid-cols-3">
-                <!-- Convert Currency Widget -->
-                <Card class="lg:col-span-1">
-                    <CardHeader>
-                        <CardTitle class="flex items-center gap-2">
-                            <ArrowRightLeft class="h-5 w-5" />
-                            Convert Currency
-                        </CardTitle>
-                        <CardDescription>
-                            Get quotes from multiple FX providers
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent class="space-y-4">
-                        <!-- Source Account -->
-                        <div class="space-y-2">
-                            <Label>Source Account</Label>
-                            <Select v-model="form.source_account_id">
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select account" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem 
-                                        v-for="account in linkedAccounts" 
-                                        :key="account.id" 
-                                        :value="account.id"
-                                    >
-                                        {{ account.institution?.name }} - {{ account.currency }}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <!-- Amount -->
-                        <div class="space-y-2">
-                            <Label>Amount</Label>
-                            <Input 
-                                v-model.number="form.amount" 
-                                type="number" 
-                                min="1"
-                                placeholder="Enter amount"
-                            />
-                        </div>
-
-                        <!-- Source Currency -->
-                        <div class="space-y-2">
-                            <Label>From Currency</Label>
-                            <Select v-model="form.source_currency">
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem 
-                                        v-for="currency in currencies" 
-                                        :key="currency" 
-                                        :value="currency"
-                                    >
-                                        {{ currency }}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <!-- Destination Currency -->
-                        <div class="space-y-2">
-                            <Label>To Currency</Label>
-                            <Select v-model="form.destination_currency">
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem 
-                                        v-for="currency in currencies" 
-                                        :key="currency" 
-                                        :value="currency"
-                                    >
-                                        {{ currency }}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <!-- PANÉTA Fee -->
-                        <div class="rounded-lg bg-muted p-3">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-muted-foreground">PANÉTA Fee</span>
-                                <span>{{ panetaFeePercent }}%</span>
-                            </div>
-                        </div>
-
-                        <Button 
-                            class="w-full" 
-                            @click="getQuotes"
-                            :disabled="!form.source_account_id || !form.amount || isLoading"
-                        >
-                            <RefreshCw v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-                            <span v-else>Get Quotes</span>
-                        </Button>
-                    </CardContent>
-                </Card>
-
-                <!-- RFQ Comparison Table -->
-                <Card class="lg:col-span-2">
-                    <CardHeader>
-                        <CardTitle class="flex items-center gap-2">
-                            <TrendingUp class="h-5 w-5" />
-                            Available Quotes
-                        </CardTitle>
-                        <CardDescription>
-                            Compare rates from FX providers - sorted by best rate
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div v-if="quotes.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
-                            <DollarSign class="mb-4 h-12 w-12 text-muted-foreground" />
-                            <p class="text-muted-foreground">
-                                Enter conversion details and click "Get Quotes" to compare rates
-                            </p>
-                        </div>
-
-                        <div v-else class="space-y-3">
-                            <div
-                                v-for="(quote, index) in quotes"
-                                :key="quote.id"
-                                :class="[
-                                    'flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-colors',
-                                    selectedQuote?.id === quote.id
-                                        ? 'border-primary bg-primary/5'
-                                        : 'hover:border-primary/50',
-                                    index === 0 ? 'ring-2 ring-green-500/20' : ''
-                                ]"
-                                @click="selectQuote(quote)"
-                            >
-                                <div class="flex items-center gap-4">
-                                    <div>
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-semibold">{{ quote.provider }}</span>
-                                            <Badge v-if="index === 0" variant="default" class="bg-green-600">
-                                                Best Rate
-                                            </Badge>
-                                        </div>
-                                        <div class="text-sm text-muted-foreground">
-                                            Rate: {{ formatRate(quote.rate) }} | Spread: {{ (quote.spread * 100).toFixed(2) }}%
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-lg font-bold text-green-600">
-                                        {{ formatCurrency(quote.destination_amount, form.destination_currency) }}
-                                    </div>
-                                    <div class="flex items-center gap-1 text-sm text-muted-foreground">
-                                        <Clock class="h-3 w-3" />
-                                        {{ quote.eta }}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <Button 
-                                v-if="selectedQuote" 
-                                class="w-full mt-4"
-                                @click="confirmExchange"
-                            >
-                                Generate FX Instruction
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-                    </div>
-
-                    <!-- FX Providers -->
                     <Card>
                         <CardHeader>
-                            <CardTitle>Active FX Providers</CardTitle>
+                            <CardTitle class="flex items-center gap-2">
+                                <Plus class="h-5 w-5" />
+                                Create P2P Exchange Offer
+                            </CardTitle>
                             <CardDescription>
-                                Connected providers for currency exchange
+                                Create an offer that will appear on the Peer-to-Peer marketplace for other users to accept
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div class="grid gap-4 md:grid-cols-4">
-                                <div 
-                                    v-for="provider in fxProviders" 
-                                    :key="provider.id"
-                                    class="flex items-center gap-3 rounded-lg border p-3"
-                                >
-                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                                        <ArrowRightLeft class="h-5 w-5 text-primary" />
+                            <form @submit.prevent="createOffer" class="space-y-6">
+                                <div class="grid gap-6 md:grid-cols-2">
+                                    <!-- Source Account -->
+                                    <div class="space-y-2">
+                                        <Label>Source Account (You're Selling)</Label>
+                                        <Select v-model="offerForm.source_account_id">
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select source account" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem 
+                                                    v-for="account in linkedAccounts" 
+                                                    :key="account.id" 
+                                                    :value="account.id"
+                                                >
+                                                    {{ account.institution?.name }} - {{ account.currency }}
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
-                                    <div>
-                                        <div class="font-medium">{{ provider.name }}</div>
-                                        <Badge variant="outline" class="text-xs">{{ provider.type }}</Badge>
+
+                                    <!-- Destination Account -->
+                                    <div class="space-y-2">
+                                        <Label>Destination Account (You're Buying)</Label>
+                                        <Select v-model="offerForm.destination_account_id">
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select destination account" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem 
+                                                    v-for="account in linkedAccounts" 
+                                                    :key="account.id" 
+                                                    :value="account.id"
+                                                >
+                                                    {{ account.institution?.name }} - {{ account.currency }}
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <!-- Sell Currency -->
+                                    <div class="space-y-2">
+                                        <Label>Selling Currency</Label>
+                                        <Select v-model="offerForm.sell_currency">
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem 
+                                                    v-for="currency in currencies" 
+                                                    :key="currency" 
+                                                    :value="currency"
+                                                >
+                                                    {{ currency }}
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <!-- Buy Currency -->
+                                    <div class="space-y-2">
+                                        <Label>Buying Currency</Label>
+                                        <Select v-model="offerForm.buy_currency">
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem 
+                                                    v-for="currency in currencies" 
+                                                    :key="currency" 
+                                                    :value="currency"
+                                                >
+                                                    {{ currency }}
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <!-- Exchange Rate -->
+                                    <div class="space-y-2">
+                                        <Label>Exchange Rate</Label>
+                                        <Input 
+                                            v-model.number="offerForm.rate" 
+                                            type="number" 
+                                            step="0.01"
+                                            min="0.01"
+                                            placeholder="e.g., 2456.8"
+                                        />
+                                        <p class="text-xs text-muted-foreground">
+                                            1 {{ offerForm.sell_currency }} = {{ offerForm.rate }} {{ offerForm.buy_currency }}
+                                        </p>
+                                    </div>
+
+                                    <!-- Amount -->
+                                    <div class="space-y-2">
+                                        <Label>Amount to Exchange</Label>
+                                        <Input 
+                                            v-model.number="offerForm.amount" 
+                                            type="number" 
+                                            step="0.01"
+                                            min="0.01"
+                                            placeholder="Enter amount"
+                                        />
+                                    </div>
+
+                                    <!-- Min Amount -->
+                                    <div class="space-y-2">
+                                        <Label>Minimum Amount</Label>
+                                        <Input 
+                                            v-model.number="offerForm.min_amount" 
+                                            type="number" 
+                                            step="0.01"
+                                            min="0.01"
+                                            placeholder="Minimum trade amount"
+                                        />
+                                    </div>
+
+                                    <!-- Expiry Days -->
+                                    <div class="space-y-2">
+                                        <Label>Offer Expires In (Days)</Label>
+                                        <Input 
+                                            v-model.number="offerForm.expires_in_days" 
+                                            type="number" 
+                                            min="1"
+                                            max="90"
+                                            placeholder="1-90 days"
+                                        />
+                                        <p class="text-xs text-muted-foreground">Maximum 90 days</p>
                                     </div>
                                 </div>
-                            </div>
+
+                                <!-- Preferred Settlement Methods -->
+                                <div class="space-y-3">
+                                    <Label>Preferred Settlement Methods</Label>
+                                    <div class="flex flex-wrap gap-3">
+                                        <div 
+                                            @click="toggleSettlementMethod('bank')"
+                                            :class="[
+                                                'flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors',
+                                                offerForm.settlement_methods.includes('bank') 
+                                                    ? 'bg-primary text-primary-foreground border-primary' 
+                                                    : 'hover:border-primary/50'
+                                            ]"
+                                        >
+                                            <div :class="[
+                                                'h-4 w-4 rounded border-2 flex items-center justify-center',
+                                                offerForm.settlement_methods.includes('bank') ? 'bg-white border-white' : 'border-gray-400'
+                                            ]">
+                                                <svg v-if="offerForm.settlement_methods.includes('bank')" class="h-3 w-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                            </div>
+                                            <span class="font-medium">Bank Transfer</span>
+                                        </div>
+
+                                        <div 
+                                            @click="toggleSettlementMethod('mobile_wallet')"
+                                            :class="[
+                                                'flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors',
+                                                offerForm.settlement_methods.includes('mobile_wallet') 
+                                                    ? 'bg-primary text-primary-foreground border-primary' 
+                                                    : 'hover:border-primary/50'
+                                            ]"
+                                        >
+                                            <div :class="[
+                                                'h-4 w-4 rounded border-2 flex items-center justify-center',
+                                                offerForm.settlement_methods.includes('mobile_wallet') ? 'bg-white border-white' : 'border-gray-400'
+                                            ]">
+                                                <svg v-if="offerForm.settlement_methods.includes('mobile_wallet')" class="h-3 w-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                            </div>
+                                            <span class="font-medium">Mobile Money</span>
+                                        </div>
+
+                                        <div 
+                                            @click="toggleSettlementMethod('card')"
+                                            :class="[
+                                                'flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors',
+                                                offerForm.settlement_methods.includes('card') 
+                                                    ? 'bg-primary text-primary-foreground border-primary' 
+                                                    : 'hover:border-primary/50'
+                                            ]"
+                                        >
+                                            <div :class="[
+                                                'h-4 w-4 rounded border-2 flex items-center justify-center',
+                                                offerForm.settlement_methods.includes('card') ? 'bg-white border-white' : 'border-gray-400'
+                                            ]">
+                                                <svg v-if="offerForm.settlement_methods.includes('card')" class="h-3 w-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                            </div>
+                                            <span class="font-medium">Cash</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <Button 
+                                    type="submit" 
+                                    class="w-full"
+                                    :disabled="offerForm.processing || !offerForm.source_account_id || !offerForm.destination_account_id || offerForm.settlement_methods.length === 0"
+                                >
+                                    <Plus class="mr-2 h-4 w-4" />
+                                    Create Offer
+                                </Button>
+                            </form>
                         </CardContent>
                     </Card>
                 </TabsContent>
 
                 <!-- Peer-to-Peer Tab -->
                 <TabsContent value="peer-to-peer" class="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle class="flex items-center gap-2">
-                                <Users class="h-5 w-5" />
-                                Peer-to-Peer Currency Exchange
-                            </CardTitle>
-                            <CardDescription>
-                                Trade directly with other users in a secure escrow environment
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div class="flex flex-col items-center justify-center py-12 text-center">
-                                <Users class="mb-4 h-12 w-12 text-muted-foreground" />
-                                <p class="text-muted-foreground">
-                                    Peer-to-Peer functionality coming soon
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <Users class="h-6 w-6 text-primary" />
+                            <h2 class="text-2xl font-bold">Live P2P Offers</h2>
+                            <Badge variant="default" class="bg-green-600">{{ p2pOffers?.length || 0 }} Online</Badge>
+                        </div>
+                        <Button variant="outline" size="sm">
+                            <RefreshCw class="mr-2 h-4 w-4" />
+                            Refresh Rates
+                        </Button>
+                    </div>
+
+                    <div v-if="!p2pOffers || p2pOffers.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
+                        <Users class="mb-4 h-12 w-12 text-muted-foreground" />
+                        <p class="text-lg font-medium">No active offers at the moment</p>
+                        <p class="text-sm text-muted-foreground">Create an offer in the "Create Offer" tab to get started</p>
+                    </div>
+
+                    <div v-else class="space-y-4">
+                        <Card 
+                            v-for="offer in p2pOffers" 
+                            :key="offer.id"
+                            class="hover:shadow-md transition-shadow"
+                        >
+                            <CardContent class="p-6">
+                                <div class="flex items-start justify-between gap-6">
+                                    <!-- User Info -->
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-lg">
+                                            {{ offer.user.name.split(' ').map(n => n[0]).join('').toUpperCase() }}
+                                        </div>
+                                        <div class="space-y-1">
+                                            <div class="flex items-center gap-2">
+                                                <h3 class="font-semibold text-lg">{{ offer.user.name }}</h3>
+                                                <Badge variant="outline" class="flex items-center gap-1">
+                                                    <svg class="h-3 w-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    {{ offer.user.trust_score }}
+                                                </Badge>
+                                            </div>
+                                            <div class="flex items-center gap-3 text-sm text-muted-foreground">
+                                                <span>📍 {{ offer.user.location }}</span>
+                                                <span>Trust Score: {{ (offer.user.trust_score * 20).toFixed(0) }}%</span>
+                                                <span>{{ offer.user.total_trades }} trades</span>
+                                            </div>
+                                            <p class="text-sm text-muted-foreground">
+                                                Premium Zimbabwean trader with instant processing. Bank-verified rates. Available 24/7.
+                                            </p>
+                                            <div class="flex gap-2 mt-2">
+                                                <Badge 
+                                                    v-for="method in offer.settlement_methods" 
+                                                    :key="method"
+                                                    variant="secondary"
+                                                    class="text-xs"
+                                                >
+                                                    {{ method === 'bank' ? 'Bank Transfer' : method === 'mobile_wallet' ? 'Mobile Money' : 'Cash' }}
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Exchange Rate & Actions -->
+                                    <div class="flex flex-col items-end gap-3 min-w-[280px]">
+                                        <div class="text-right">
+                                            <div class="text-3xl font-bold text-primary">
+                                                1 {{ offer.sell_currency }} = {{ offer.rate.toFixed(1) }} {{ offer.buy_currency }}
+                                            </div>
+                                            <div class="text-sm text-muted-foreground mt-1">
+                                                Min: {{ offer.min_amount }} - Max: {{ offer.max_amount.toLocaleString() }}
+                                            </div>
+                                            <div class="flex items-center justify-end gap-1 text-xs text-muted-foreground mt-1">
+                                                <Clock class="h-3 w-3" />
+                                                <span>{{ formatTimeAgo(offer.expires_at) }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-2 w-full">
+                                            <Button variant="outline" size="sm" class="flex-1">
+                                                <ArrowRightLeft class="mr-1 h-4 w-4" />
+                                                Negotiate Rate
+                                            </Button>
+                                            <Button size="sm" class="flex-1 bg-blue-600 hover:bg-blue-700">
+                                                <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                                </svg>
+                                                Start Exchange
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </TabsContent>
 
                 <!-- FX Marketplace Tab -->

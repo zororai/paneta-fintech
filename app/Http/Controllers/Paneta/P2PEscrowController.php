@@ -53,17 +53,28 @@ class P2PEscrowController extends Controller
     {
         $validated = $request->validate([
             'source_account_id' => 'required|exists:linked_accounts,id',
+            'destination_account_id' => 'nullable|exists:linked_accounts,id',
             'sell_currency' => 'required|string|size:3',
             'buy_currency' => 'required|string|size:3',
             'rate' => 'required|numeric|min:0.000001',
             'amount' => 'required|numeric|min:1',
             'min_amount' => 'nullable|numeric|min:1',
-            'expires_in_hours' => 'nullable|integer|min:1|max:168',
+            'settlement_methods' => 'required|array|min:1',
+            'settlement_methods.*' => 'string|in:bank,mobile_wallet,card',
+            'expires_in_days' => 'nullable|integer|min:1|max:90',
         ]);
 
         $sourceAccount = LinkedAccount::findOrFail($validated['source_account_id']);
         if ($sourceAccount->user_id !== $request->user()->id) {
             return back()->withErrors(['source_account_id' => 'Account does not belong to you']);
+        }
+
+        $destinationAccount = null;
+        if (isset($validated['destination_account_id'])) {
+            $destinationAccount = LinkedAccount::findOrFail($validated['destination_account_id']);
+            if ($destinationAccount->user_id !== $request->user()->id) {
+                return back()->withErrors(['destination_account_id' => 'Account does not belong to you']);
+            }
         }
 
         $result = $this->marketplaceEngine->createOffer(
@@ -74,11 +85,14 @@ class P2PEscrowController extends Controller
             rate: $validated['rate'],
             amount: $validated['amount'],
             minAmount: $validated['min_amount'] ?? null,
-            expiresInHours: $validated['expires_in_hours'] ?? 24
+            expiresInDays: $validated['expires_in_days'] ?? 7,
+            idempotencyKey: null,
+            destinationAccount: $destinationAccount,
+            settlementMethods: $validated['settlement_methods']
         );
 
         if ($result->success) {
-            return back()->with('success', 'FX offer created successfully.');
+            return back()->with('success', 'P2P offer created successfully and is now live on the marketplace.');
         }
 
         return back()->withErrors(['error' => $result->error]);
