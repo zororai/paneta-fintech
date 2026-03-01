@@ -66,7 +66,17 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn () => Inertia::render('auth/Register'));
+        Fortify::registerView(function (Request $request) {
+            // If account type is specified, show the registration form
+            if ($request->has('type')) {
+                return Inertia::render('auth/Register', [
+                    'accountType' => $request->query('type'),
+                ]);
+            }
+            
+            // Otherwise, show account type selection
+            return Inertia::render('auth/AccountTypeSelection');
+        });
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/TwoFactorChallenge'));
 
