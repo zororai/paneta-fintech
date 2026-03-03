@@ -33,7 +33,7 @@ class ServiceProviderController extends Controller
                 ->count(),
             'total_volume' => CrossBorderTransactionIntent::where('fx_provider_id', $provider->id)
                 ->where('status', 'executed')
-                ->sum('amount'),
+                ->sum('source_amount'),
             'pending_requests' => CrossBorderTransactionIntent::where('fx_provider_id', $provider->id)
                 ->where('status', 'pending')
                 ->count(),
@@ -179,10 +179,10 @@ class ServiceProviderController extends Controller
 
     private function calculateAvgExecutionTime($providerId): float
     {
+        // Using updated_at as proxy since executed_at column doesn't exist
         return CrossBorderTransactionIntent::where('fx_provider_id', $providerId)
             ->where('status', 'executed')
-            ->whereNotNull('executed_at')
-            ->selectRaw('AVG(TIMESTAMPDIFF(SECOND, created_at, executed_at)) as avg_time')
+            ->selectRaw('AVG(TIMESTAMPDIFF(SECOND, created_at, updated_at)) as avg_time')
             ->value('avg_time') ?? 0;
     }
 
@@ -190,7 +190,7 @@ class ServiceProviderController extends Controller
     {
         return CrossBorderTransactionIntent::where('fx_provider_id', $providerId)
             ->where('status', 'executed')
-            ->selectRaw('DATE(created_at) as date, SUM(amount) as volume')
+            ->selectRaw('DATE(created_at) as date, SUM(source_amount) as volume')
             ->groupBy('date')
             ->orderBy('date', 'desc')
             ->limit(30)
@@ -211,10 +211,10 @@ class ServiceProviderController extends Controller
     {
         $providerVolume = CrossBorderTransactionIntent::where('fx_provider_id', $providerId)
             ->where('status', 'executed')
-            ->sum('amount');
+            ->sum('source_amount');
 
         $totalVolume = CrossBorderTransactionIntent::where('status', 'executed')
-            ->sum('amount');
+            ->sum('source_amount');
 
         return $totalVolume > 0 ? round(($providerVolume / $totalVolume) * 100, 2) : 0;
     }
@@ -251,8 +251,8 @@ class ServiceProviderController extends Controller
     {
         return CrossBorderTransactionIntent::where('fx_provider_id', $providerId)
             ->where('status', 'executed')
-            ->select('currency', DB::raw('SUM(amount) as total_volume'))
-            ->groupBy('currency')
+            ->select('source_currency as currency', DB::raw('SUM(source_amount) as total_volume'))
+            ->groupBy('source_currency')
             ->orderByDesc('total_volume')
             ->get()
             ->toArray();

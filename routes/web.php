@@ -131,6 +131,10 @@ Route::middleware(['auth', 'verified'])->prefix('paneta')->name('paneta.')->grou
     Route::get('/currency-exchange', [CurrencyExchangeController::class, 'index'])->name('currency-exchange.index');
     Route::post('/currency-exchange/quote', [CurrencyExchangeController::class, 'getQuote'])->name('currency-exchange.quote');
 
+    // FX Provider (Business Account users)
+    Route::get('/fx-provider', [\App\Http\Controllers\Paneta\FXProviderController::class, 'index'])->name('fx-provider.index');
+    Route::post('/fx-provider/register', [\App\Http\Controllers\Paneta\FXProviderController::class, 'register'])->name('fx-provider.register');
+
     // Wealth Management (Read-Only)
     Route::get('/wealth', [WealthController::class, 'index'])->name('wealth.index');
 

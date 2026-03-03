@@ -52,6 +52,11 @@ const panetaNavItems: NavItem[] = [
         icon: ArrowRightLeft,
     },
     {
+        title: 'FX Provider',
+        href: '/paneta/fx-provider',
+        icon: Handshake,
+    },
+    {
         title: 'Wealth & Investments',
         href: '/paneta/wealth',
         icon: TrendingUp,

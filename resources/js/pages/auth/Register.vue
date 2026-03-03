@@ -23,135 +23,207 @@ const accountTitle = isPersonal ? 'Personal Account' : isBusiness ? 'Business Ac
 
 <template>
     <AuthBase
-        :title="`Create ${accountTitle}`"
-        description="Enter your details below to create your account"
+        :title="isPersonal ? 'Personal Account Registration' : isBusiness ? 'Business Account Registration' : `Create ${accountTitle}`"
+        :description="isPersonal ? 'Create your personal PANETA account with phone verification' : isBusiness ? 'Create your business PANETA account with enhanced security' : 'Enter your details below to create your account'"
     >
         <Head :title="`Register - ${accountTitle}`" />
 
-        <!-- Account Type Badge -->
-        <div v-if="accountType" class="flex items-center justify-center gap-2 mb-4">
-            <Badge class="bg-blue-100 text-blue-700 px-4 py-2">
-                <component :is="isPersonal ? User : Building2" class="h-4 w-4 mr-2" />
-                {{ accountTitle }}
-            </Badge>
-            <Link href="/register" class="text-sm text-gray-600 hover:text-gray-900">
-                Change
-            </Link>
-        </div>
-
         <Form
             v-bind="store.form()"
-            :reset-on-success="['password', 'password_confirmation']"
+            :reset-on-success="['pin', 'pin_confirmation']"
             v-slot="{ errors, processing }"
             class="flex flex-col gap-6"
         >
             <div class="grid gap-6">
-                <!-- Business Name (Business accounts only) -->
-                <div v-if="isBusiness" class="grid gap-2">
-                    <Label for="business_name">Business Name</Label>
-                    <Input
-                        id="business_name"
-                        type="text"
-                        required
-                        autofocus
-                        :tabindex="1"
-                        name="business_name"
-                        placeholder="Company or organization name"
-                    />
-                    <InputError :message="errors.business_name" />
-                </div>
-
-                <!-- Registration Number (Business accounts only) -->
-                <div v-if="isBusiness" class="grid gap-2">
-                    <Label for="registration_number">Registration Number</Label>
-                    <Input
-                        id="registration_number"
-                        type="text"
-                        required
-                        :tabindex="2"
-                        name="registration_number"
-                        placeholder="Business registration number"
-                    />
-                    <InputError :message="errors.registration_number" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="name">{{ isBusiness ? 'Contact Person Name' : 'Full Name' }}</Label>
-                    <Input
-                        id="name"
-                        type="text"
-                        required
-                        :autofocus="!isBusiness"
-                        :tabindex="isBusiness ? 3 : 1"
-                        autocomplete="name"
-                        name="name"
-                        :placeholder="isBusiness ? 'Contact person full name' : 'Your full name'"
-                    />
-                    <InputError :message="errors.name" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        required
-                        :tabindex="2"
-                        autocomplete="email"
-                        name="email"
-                        placeholder="email@example.com"
-                    />
-                    <InputError :message="errors.email" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="password">Password</Label>
-                    <Input
-                        id="password"
-                        type="password"
-                        required
-                        :tabindex="3"
-                        autocomplete="new-password"
-                        name="password"
-                        placeholder="Password"
-                    />
-                    <InputError :message="errors.password" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="password_confirmation">Confirm password</Label>
-                    <Input
-                        id="password_confirmation"
-                        type="password"
-                        required
-                        :tabindex="4"
-                        autocomplete="new-password"
-                        name="password_confirmation"
-                        placeholder="Confirm password"
-                    />
-                    <InputError :message="errors.password_confirmation" />
-                </div>
-
-                <Button
-                    type="submit"
-                    class="mt-2 w-full"
-                    tabindex="5"
-                    :disabled="processing"
-                    data-test="register-user-button"
-                >
-                    <Spinner v-if="processing" />
-                    Create account
-                </Button>
-            </div>
-
-            <div class="text-center text-sm text-muted-foreground">
-                Already have an account?
-                <TextLink
-                    :href="login()"
-                    class="underline underline-offset-4"
-                    :tabindex="isBusiness ? 10 : 6"
-                    >Log in</TextLink
-                >
+                <template v-if="isPersonal">
+                    <div class="grid gap-2">
+                        <Label for="name">Full Name</Label>
+                        <Input id="name" type="text" required autofocus name="name" placeholder="Enter your full name" />
+                        <InputError :message="errors.name" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="grid gap-2">
+                            <Label for="country_code">Country Code</Label>
+                            <select id="country_code" name="country_code" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                <option value="">Select country code</option>
+                                <option value="+263">+263 (Zimbabwe)</option>
+                                <option value="+27">+27 (South Africa)</option>
+                            </select>
+                            <InputError :message="errors.country_code" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="phone">Phone Number</Label>
+                            <Input id="phone" type="tel" required name="phone" placeholder="Enter phone number" />
+                            <InputError :message="errors.phone" />
+                        </div>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="date_of_birth">Date of Birth</Label>
+                        <Input id="date_of_birth" type="date" required name="date_of_birth" />
+                        <InputError :message="errors.date_of_birth" />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="country_of_origin">Country of Origin</Label>
+                        <select id="country_of_origin" name="country_of_origin" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                            <option value="">Select your country of origin</option>
+                            <option value="ZW">Zimbabwe</option>
+                            <option value="ZA">South Africa</option>
+                        </select>
+                        <InputError :message="errors.country_of_origin" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="grid gap-2">
+                            <Label for="city">City</Label>
+                            <Input id="city" type="text" required name="city" placeholder="Enter your city" />
+                            <InputError :message="errors.city" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="address">Address (Optional)</Label>
+                            <Input id="address" type="text" name="address" placeholder="Enter your address" />
+                            <InputError :message="errors.address" />
+                        </div>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="email">Email Address (Optional)</Label>
+                        <Input id="email" type="email" name="email" placeholder="Enter email (optional)" />
+                        <InputError :message="errors.email" />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="profile_picture">Profile Picture (Optional)</Label>
+                        <Input id="profile_picture" type="file" name="profile_picture" accept="image/*" />
+                        <p class="text-xs text-muted-foreground">Upload a clear photo for your profile</p>
+                        <InputError :message="errors.profile_picture" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="grid gap-2">
+                            <Label for="pin">Create 4-Digit PIN</Label>
+                            <Input id="pin" type="password" required name="pin" placeholder="Enter PIN" maxlength="4" />
+                            <InputError :message="errors.pin" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="pin_confirmation">Confirm PIN</Label>
+                            <Input id="pin_confirmation" type="password" required name="pin_confirmation" placeholder="Confirm PIN" maxlength="4" />
+                            <InputError :message="errors.pin_confirmation" />
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <Button type="button" variant="outline" class="flex-1" as-child>
+                            <Link href="/register">Back</Link>
+                        </Button>
+                        <Button type="submit" class="flex-1 gap-2" :disabled="processing">
+                            <Spinner v-if="processing" />
+                            <User class="h-4 w-4" />
+                            Register Account
+                        </Button>
+                    </div>
+                </template>
+                <template v-else>
+                    <div class="grid gap-2">
+                        <Label for="company_name">Company Name</Label>
+                        <Input id="company_name" type="text" required autofocus name="company_name" placeholder="Enter company name" />
+                        <InputError :message="errors.company_name" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="grid gap-2">
+                            <Label for="country_code">Country Code</Label>
+                            <select id="country_code" name="country_code" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                <option value="">Select country code</option>
+                                <option value="+263">+263 (Zimbabwe)</option>
+                                <option value="+27">+27 (South Africa)</option>
+                            </select>
+                            <InputError :message="errors.country_code" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="business_phone">Business Phone Number</Label>
+                            <Input id="business_phone" type="tel" required name="business_phone" placeholder="Enter business phone number" />
+                            <InputError :message="errors.business_phone" />
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="grid gap-2">
+                            <Label for="company_type">Company Type</Label>
+                            <select id="company_type" name="company_type" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                <option value="">Select company type</option>
+                                <option value="sole_proprietor">Sole Proprietor</option>
+                                <option value="partnership">Partnership</option>
+                                <option value="llc">LLC</option>
+                                <option value="corporation">Corporation</option>
+                            </select>
+                            <InputError :message="errors.company_type" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="business_sector">Business Sector</Label>
+                            <select id="business_sector" name="business_sector" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                <option value="">Select sector</option>
+                                <option value="technology">Technology</option>
+                                <option value="finance">Finance</option>
+                                <option value="retail">Retail</option>
+                                <option value="manufacturing">Manufacturing</option>
+                            </select>
+                            <InputError :message="errors.business_sector" />
+                        </div>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="services_offered">Services Offered (Optional)</Label>
+                        <textarea id="services_offered" name="services_offered" rows="3" placeholder="Describe your services" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"></textarea>
+                        <InputError :message="errors.services_offered" />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="registration_number">Business Registration Number</Label>
+                        <Input id="registration_number" type="text" required name="registration_number" placeholder="Enter registration number" />
+                        <InputError :message="errors.registration_number" />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="physical_address">Physical Address</Label>
+                        <Input id="physical_address" type="text" required name="physical_address" placeholder="Enter business address" />
+                        <InputError :message="errors.physical_address" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="grid gap-2">
+                            <Label for="website">Website (Optional)</Label>
+                            <Input id="website" type="url" name="website" placeholder="https://company.com" />
+                            <InputError :message="errors.website" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="tax_id">Tax ID (Optional)</Label>
+                            <Input id="tax_id" type="text" name="tax_id" placeholder="Enter tax identification" />
+                            <InputError :message="errors.tax_id" />
+                        </div>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="business_email">Business Email (Optional)</Label>
+                        <Input id="business_email" type="email" name="business_email" placeholder="Enter business email (optional)" />
+                        <InputError :message="errors.business_email" />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="company_logo">Company Logo (Optional)</Label>
+                        <Input id="company_logo" type="file" name="company_logo" accept="image/*" />
+                        <p class="text-xs text-muted-foreground">Upload your company logo for professional branding</p>
+                        <InputError :message="errors.company_logo" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="grid gap-2">
+                            <Label for="pin">Create 4-Digit PIN</Label>
+                            <Input id="pin" type="password" required name="pin" placeholder="Enter PIN" maxlength="4" />
+                            <InputError :message="errors.pin" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="pin_confirmation">Confirm PIN</Label>
+                            <Input id="pin_confirmation" type="password" required name="pin_confirmation" placeholder="Confirm PIN" maxlength="4" />
+                            <InputError :message="errors.pin_confirmation" />
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <Button type="button" variant="outline" class="flex-1" as-child>
+                            <Link href="/register">Back</Link>
+                        </Button>
+                        <Button type="submit" class="flex-1 gap-2" :disabled="processing">
+                            <Spinner v-if="processing" />
+                            <Building2 class="h-4 w-4" />
+                            Register Business
+                        </Button>
+                    </div>
+                </template>
             </div>
         </Form>
     </AuthBase>
