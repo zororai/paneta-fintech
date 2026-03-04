@@ -50,12 +50,8 @@ defineProps<{
 
         <!-- Right Panel - Form Section -->
         <div class="flex w-full flex-col lg:w-1/2">
-            <!-- Header with Logo and Sign Up -->
-            <div class="flex items-center justify-between p-6 lg:p-8">
-                <Link :href="home()" class="flex items-center gap-2">
-                    <AppLogoIcon class="size-8 fill-current text-blue-600" />
-                    <span class="text-xl font-semibold text-slate-800">{{ name }}</span>
-                </Link>
+            <!-- Sign Up Link Only -->
+            <div class="flex justify-end p-6 lg:p-8">
                 <Link
                     v-if="showSignUpLink"
                     :href="register()"

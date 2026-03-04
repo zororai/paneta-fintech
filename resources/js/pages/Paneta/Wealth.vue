@@ -1731,19 +1731,19 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                         <CardContent>
                             <div class="grid gap-4 md:grid-cols-3">
                                 <Button variant="outline" class="h-24 flex flex-col gap-2" as-child>
-                                    <a href="/paneta/accounts">
+                                    <a href="/paneta/connect-trading-account/stockbrokers">
                                         <BarChart3 class="h-6 w-6" />
                                         <span>Stock Brokers</span>
                                     </a>
                                 </Button>
                                 <Button variant="outline" class="h-24 flex flex-col gap-2" as-child>
-                                    <a href="/paneta/accounts">
+                                    <a href="/paneta/connect-trading-account/cryptoexchanges">
                                         <DollarSign class="h-6 w-6" />
                                         <span>Crypto Exchanges</span>
                                     </a>
                                 </Button>
                                 <Button variant="outline" class="h-24 flex flex-col gap-2" as-child>
-                                    <a href="/paneta/accounts">
+                                    <a href="/paneta/connect-trading-account/investmentplatforms">
                                         <Building2 class="h-6 w-6" />
                                         <span>Investment Platforms</span>
                                     </a>
