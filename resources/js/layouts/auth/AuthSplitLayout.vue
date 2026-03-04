@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import { Link, usePage } from '@inertiajs/vue3';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
-import { home, register } from '@/routes';
-
-const page = usePage();
-const name = page.props.name;
+import { Link } from '@inertiajs/vue3';
+import { register } from '@/routes';
 
 defineProps<{
     title?: string;
@@ -14,64 +10,64 @@ defineProps<{
 </script>
 
 <template>
-    <div class="flex min-h-screen bg-slate-100">
-        <!-- Left Panel - Welcome Section -->
-        <div
-            class="relative hidden w-1/2 overflow-hidden lg:block"
-        >
-            <!-- Gradient Background -->
-            <div class="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-700 to-blue-900">
-                <!-- Decorative curves -->
-                <svg class="absolute inset-0 h-full w-full" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice">
-                    <path d="M-100,400 Q150,300 100,600 T400,800" stroke="rgba(99, 200, 200, 0.3)" stroke-width="120" fill="none" />
-                    <path d="M600,100 Q450,250 500,0" stroke="rgba(99, 200, 200, 0.2)" stroke-width="100" fill="none" />
-                </svg>
-            </div>
-            
-            <!-- Content -->
-            <div class="relative z-10 flex h-full flex-col justify-center p-12">
-                <h1 class="mb-4 text-5xl font-bold text-white">Welcome</h1>
-                <p class="max-w-xs text-lg text-white/80">
-                    Your trusted platform<br />
-                    for seamless administration<br />
-                    and security.
-                </p>
-                
-                <!-- Logo -->
-                <div class="mt-12 flex justify-center">
-                    <img 
-                        src="/images/paneta-logo.png" 
-                        alt="Panéta Capital" 
-                        class="h-64 w-auto drop-shadow-2xl"
-                    />
-                </div>
-            </div>
+    <div class="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+        <div class="absolute inset-0">
+            <div class="absolute inset-0 bg-gradient-to-bl from-blue-900 via-slate-900 to-black opacity-90"></div>
+            <div class="absolute inset-y-0 left-1/2 h-[160%] w-[60%] -translate-x-1/2 rotate-6 transform bg-gradient-to-br from-cyan-500/20 via-blue-500/10 to-transparent blur-3xl"></div>
+            <div class="absolute -bottom-32 right-10 h-96 w-96 rounded-full bg-blue-400/10 blur-[120px]"></div>
         </div>
 
-        <!-- Right Panel - Form Section -->
-        <div class="flex w-full flex-col lg:w-1/2">
-            <!-- Sign Up Link Only -->
-            <div class="flex justify-end p-6 lg:p-8">
-                <Link
-                    v-if="showSignUpLink"
-                    :href="register()"
-                    class="flex items-center gap-1 rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-                >
-                    Sign Up
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                </Link>
-            </div>
+        <div class="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
+            <div class="w-full max-w-5xl space-y-10 text-center">
+                <div class="space-y-6">
+                    <h1 class="text-4xl font-semibold uppercase tracking-[0.4em] text-blue-100">
+                        PANÉTA CAPITAL
+                    </h1>
+                    <div class="space-y-4">
+                        <p class="text-sm font-semibold text-blue-200">Digital Finance Hub</p>
+                        <h2 class="text-5xl font-bold tracking-tight text-white md:text-6xl">
+                            Welcome to PANÉTA
+                        </h2>
+                        <p class="text-lg text-blue-100 md:text-xl">
+                            Your Comprehensive Financial Solution for the Modern Digital Economy
+                        </p>
+                    </div>
 
-            <!-- Form Content -->
-            <div class="flex flex-1 items-center justify-center px-6 lg:px-16">
-                <div class="w-full max-w-md">
-                    <div class="mb-8">
-                        <h2 class="text-3xl font-bold text-slate-800" v-if="title">
+                    <div class="flex justify-center">
+                        <div class="rounded-full bg-gradient-to-br from-slate-50 via-slate-200 to-slate-400 p-[2px] shadow-[0_20px_60px_rgba(15,23,42,0.6)]">
+                            <div class="rounded-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-300 p-6">
+                                <img
+                                    src="/images/paneta-logo.png"
+                                    alt="PANÉTA logo"
+                                    class="h-28 w-auto"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-lg font-semibold text-white">
+                        The Network of Global Finance
+                    </p>
+
+                    <div class="flex flex-wrap justify-center gap-4">
+                        <Link
+                            :href="register()"
+                            class="inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-base font-semibold text-slate-900 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                        >
+                            Register Now
+                        </Link>
+                    </div>
+                </div>
+
+                <div
+                    id="auth-form"
+                    class="mx-auto w-full max-w-xl rounded-3xl bg-white/95 p-8 text-left shadow-2xl shadow-blue-900/40 backdrop-blur"
+                >
+                    <div class="mb-8 text-slate-900" v-if="title || description">
+                        <h2 class="text-3xl font-bold" v-if="title">
                             {{ title }}
                         </h2>
-                        <p class="mt-2 text-slate-500" v-if="description">
+                        <p class="mt-2 text-base text-slate-500" v-if="description">
                             {{ description }}
                         </p>
                     </div>
@@ -81,3 +77,4 @@ defineProps<{
         </div>
     </div>
 </template>
+
