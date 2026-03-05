@@ -20,12 +20,15 @@ import { dashboard } from '@/routes';
 import { computed } from 'vue';
 
 const page = usePage();
-const user = computed(() => page.props.auth?.user as { role?: string } | undefined);
+const user = computed(() => page.props.auth?.user as { role?: string; account_type?: string } | undefined);
+const entitlements = computed(() => (page.props.auth as { entitlements?: Record<string, boolean> })?.entitlements ?? {});
 const isAdmin = computed(() => user.value?.role === 'admin');
 const isRegulator = computed(() => user.value?.role === 'regulator');
 const isServiceProvider = computed(() => user.value?.role === 'fx_provider');
+const isBusinessAccount = computed(() => user.value?.account_type === 'business');
 
-const panetaNavItems: NavItem[] = [
+// Base nav items available to all users
+const baseNavItems: NavItem[] = [
     {
         title: 'PANÉTA Dashboard',
         href: '/paneta',
@@ -52,11 +55,6 @@ const panetaNavItems: NavItem[] = [
         icon: ArrowRightLeft,
     },
     {
-        title: 'FX Provider',
-        href: '/paneta/fx-provider',
-        icon: Handshake,
-    },
-    {
         title: 'Wealth & Investments',
         href: '/paneta/wealth',
         icon: TrendingUp,
@@ -72,16 +70,39 @@ const panetaNavItems: NavItem[] = [
         icon: Receipt,
     },
     {
-        title: 'Merchant SoftPOS',
-        href: '/paneta/merchant',
-        icon: Store,
-    },
-    {
         title: 'Audit Logs',
         href: '/paneta/audit-logs',
         icon: FileText,
     },
 ];
+
+// Business-only nav items (restricted for personal accounts)
+const businessOnlyNavItems: NavItem[] = [
+    {
+        title: 'Merchant SoftPOS',
+        href: '/paneta/merchant',
+        icon: Store,
+    },
+    {
+        title: 'FX Provider',
+        href: '/paneta/fx-provider',
+        icon: Handshake,
+    },
+];
+
+// Computed nav items based on account type
+const panetaNavItems = computed(() => {
+    if (isBusinessAccount.value) {
+        // Business accounts get all items, insert business items in appropriate positions
+        const items = [...baseNavItems];
+        // Insert FX Provider after Currency Exchange (index 4)
+        items.splice(5, 0, businessOnlyNavItems[1]);
+        // Insert Merchant SoftPOS before Audit Logs (will be second to last)
+        items.splice(items.length - 1, 0, businessOnlyNavItems[0]);
+        return items;
+    }
+    return baseNavItems;
+});
 
 const adminNavItems: NavItem[] = [
     {

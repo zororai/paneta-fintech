@@ -131,9 +131,11 @@ Route::middleware(['auth', 'verified'])->prefix('paneta')->name('paneta.')->grou
     Route::get('/currency-exchange', [CurrencyExchangeController::class, 'index'])->name('currency-exchange.index');
     Route::post('/currency-exchange/quote', [CurrencyExchangeController::class, 'getQuote'])->name('currency-exchange.quote');
 
-    // FX Provider (Business Account users)
-    Route::get('/fx-provider', [\App\Http\Controllers\Paneta\FXProviderController::class, 'index'])->name('fx-provider.index');
-    Route::post('/fx-provider/register', [\App\Http\Controllers\Paneta\FXProviderController::class, 'register'])->name('fx-provider.register');
+    // FX Provider (Business Account users only)
+    Route::middleware('business')->group(function () {
+        Route::get('/fx-provider', [\App\Http\Controllers\Paneta\FXProviderController::class, 'index'])->name('fx-provider.index');
+        Route::post('/fx-provider/register', [\App\Http\Controllers\Paneta\FXProviderController::class, 'register'])->name('fx-provider.register');
+    });
 
     // Wealth Management (Read-Only)
     Route::get('/wealth', [WealthController::class, 'index'])->name('wealth.index');
@@ -154,13 +156,15 @@ Route::middleware(['auth', 'verified'])->prefix('paneta')->name('paneta.')->grou
     Route::post('/bills/pay', [\App\Http\Controllers\Paneta\BillsController::class, 'payBill'])->name('bills.pay');
     Route::post('/bills/save-biller', [\App\Http\Controllers\Paneta\BillsController::class, 'saveBiller'])->name('bills.save-biller');
 
-    // Merchant SoftPOS
-    Route::get('/merchant', [MerchantController::class, 'index'])->name('merchant.index');
-    Route::post('/merchant/register', [MerchantController::class, 'register'])->name('merchant.register');
-    Route::post('/merchant/{merchant}/settlement', [MerchantController::class, 'setSettlementAccount'])->name('merchant.settlement');
-    Route::post('/merchant/{merchant}/devices', [MerchantController::class, 'registerDevice'])->name('merchant.devices.store');
-    Route::post('/merchant/{merchant}/devices/{device}/deactivate', [MerchantController::class, 'deactivateDevice'])->name('merchant.devices.deactivate');
-    Route::post('/merchant/{merchant}/qr', [MerchantController::class, 'generateQr'])->name('merchant.qr');
+    // Merchant SoftPOS (Business Account users only)
+    Route::middleware('business')->prefix('merchant')->name('merchant.')->group(function () {
+        Route::get('/', [MerchantController::class, 'index'])->name('index');
+        Route::post('/register', [MerchantController::class, 'register'])->name('register');
+        Route::post('/{merchant}/settlement', [MerchantController::class, 'setSettlementAccount'])->name('settlement');
+        Route::post('/{merchant}/devices', [MerchantController::class, 'registerDevice'])->name('devices.store');
+        Route::post('/{merchant}/devices/{device}/deactivate', [MerchantController::class, 'deactivateDevice'])->name('devices.deactivate');
+        Route::post('/{merchant}/qr', [MerchantController::class, 'generateQr'])->name('qr');
+    });
 
     // P2P FX Escrow
     Route::get('/p2p-escrow', [P2PEscrowController::class, 'index'])->name('p2p-escrow.index');

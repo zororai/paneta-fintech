@@ -180,4 +180,54 @@ class User extends Authenticatable
     {
         return $this->subscriptions()->active()->exists();
     }
+
+    public function isPersonalAccount(): bool
+    {
+        return $this->account_type === 'personal';
+    }
+
+    public function isBusinessAccount(): bool
+    {
+        return $this->account_type === 'business';
+    }
+
+    /**
+     * Services restricted for personal accounts:
+     * - Merchant SoftPOS
+     * - FX Dealership rights
+     * - Batch Payments
+     * - Multiple accounts under same account
+     */
+    public function canAccessMerchantSoftPOS(): bool
+    {
+        return $this->isBusinessAccount();
+    }
+
+    public function canAccessFXDealership(): bool
+    {
+        return $this->isBusinessAccount();
+    }
+
+    public function canAccessBatchPayments(): bool
+    {
+        return $this->isBusinessAccount();
+    }
+
+    public function canHaveMultipleAccounts(): bool
+    {
+        return $this->isBusinessAccount();
+    }
+
+    /**
+     * Get user entitlements for frontend gating
+     */
+    public function getEntitlements(): array
+    {
+        return [
+            'merchant_softpos' => $this->canAccessMerchantSoftPOS(),
+            'fx_dealership' => $this->canAccessFXDealership(),
+            'batch_payments' => $this->canAccessBatchPayments(),
+            'multiple_accounts' => $this->canHaveMultipleAccounts(),
+        ];
+    }
 }

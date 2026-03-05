@@ -20,11 +20,7 @@ defineProps<{
         <div class="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
             <div class="w-full max-w-5xl space-y-10 text-center">
                 <div class="space-y-6">
-                    <h1 class="text-4xl font-semibold uppercase tracking-[0.4em] text-blue-100">
-                        PANÉTA CAPITAL
-                    </h1>
                     <div class="space-y-4">
-                        <p class="text-sm font-semibold text-blue-200">Digital Finance Hub</p>
                         <h2 class="text-5xl font-bold tracking-tight text-white md:text-6xl">
                             Welcome to PANÉTA
                         </h2>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthSplitLayout from '@/layouts/auth/AuthSplitLayout.vue';
-import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 
 defineProps<{
@@ -16,6 +15,20 @@ defineProps<{
     canResetPassword: boolean;
     canRegister: boolean;
 }>();
+
+const form = useForm({
+    email: '',
+    password: '',
+    remember: false,
+});
+
+const submit = () => {
+    form.post('/login', {
+        onFinish: () => {
+            form.reset('password');
+        },
+    });
+};
 </script>
 
 <template>
@@ -33,19 +46,14 @@ defineProps<{
             {{ status }}
         </div>
 
-        <Form
-            v-bind="store.form()"
-            :reset-on-success="['password']"
-            v-slot="{ errors, processing }"
-            class="flex flex-col gap-5"
-        >
+        <form @submit.prevent="submit" class="flex flex-col gap-5">
             <div class="grid gap-5">
                 <div class="grid gap-2">
                     <Label for="email" class="text-sm text-slate-500">Email</Label>
                     <Input
                         id="email"
+                        v-model="form.email"
                         type="email"
-                        name="email"
                         required
                         autofocus
                         :tabindex="1"
@@ -53,7 +61,7 @@ defineProps<{
                         placeholder="email@example.com"
                         class="h-12 rounded-lg border-slate-200 bg-white px-4 focus:border-blue-600 focus:ring-blue-600"
                     />
-                    <InputError :message="errors.email" />
+                    <InputError :message="form.errors.email" />
                 </div>
 
                 <div class="grid gap-2">
@@ -61,8 +69,8 @@ defineProps<{
                     <div class="relative">
                         <Input
                             id="password"
+                            v-model="form.password"
                             type="password"
-                            name="password"
                             required
                             :tabindex="2"
                             autocomplete="current-password"
@@ -72,12 +80,12 @@ defineProps<{
                             class="h-12 rounded-lg border-slate-200 bg-white px-4 pr-10 focus:border-blue-600 focus:ring-blue-600"
                         />
                     </div>
-                    <InputError :message="errors.password" />
+                    <InputError :message="form.errors.password" />
                 </div>
 
                 <div class="flex items-center justify-between">
                     <Label for="remember" class="flex items-center gap-2 text-sm text-slate-600">
-                        <Checkbox id="remember" name="remember" :tabindex="3" />
+                        <Checkbox id="remember" v-model:checked="form.remember" :tabindex="3" />
                         <span>Keep me logged in</span>
                     </Label>
                     <TextLink
@@ -94,10 +102,10 @@ defineProps<{
                     type="submit"
                     class="mt-2 h-12 w-full rounded-lg bg-blue-600 text-base font-medium text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-700"
                     :tabindex="4"
-                    :disabled="processing"
+                    :disabled="form.processing"
                     data-test="login-button"
                 >
-                    <Spinner v-if="processing" />
+                    <Spinner v-if="form.processing" />
                     Sign In
                 </Button>
 
@@ -127,6 +135,6 @@ defineProps<{
                     Sign in with Google
                 </Button>
             </div>
-        </Form>
+        </form>
     </AuthSplitLayout>
 </template>
