@@ -54,5 +54,24 @@ class DemoAccountsSeeder extends Seeder
         );
 
         $this->command->info('Business demo account created: business@demo.com / PIN: 1234');
+
+        // Update existing FX Provider accounts with PIN
+        $fxProvider1 = User::where('email', 'provider@globalfx.com')->first();
+        if ($fxProvider1) {
+            $fxProvider1->update([
+                'password' => Hash::make('1234'),
+                'pin_hash' => Hash::make('1234'),
+            ]);
+            $this->command->info('Updated FX Provider: provider@globalfx.com / PIN: 1234');
+        }
+
+        $fxProvider2 = User::where('email', 'provider@zimfx.co.zw')->first();
+        if ($fxProvider2) {
+            $fxProvider2->update([
+                'password' => Hash::make('1234'),
+                'pin_hash' => Hash::make('1234'),
+            ]);
+            $this->command->info('Updated FX Provider: provider@zimfx.co.zw / PIN: 1234');
+        }
     }
 }

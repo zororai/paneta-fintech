@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\FxProvider;
 use App\Models\FxQuote;
 use App\Models\CrossBorderTransactionIntent;
+use App\Models\ExchangeRequest;
+use App\Models\LinkedAccount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -104,20 +106,113 @@ class ServiceProviderController extends Controller
         $user = auth()->user();
         $provider = FxProvider::find($user->fx_provider_id);
 
-        $query = CrossBorderTransactionIntent::where('fx_provider_id', $provider->id)
-            ->with(['user', 'issuerAccount']);
+        if (!$provider) {
+            abort(403, 'No FX Provider associated with this account');
+        }
 
+        // Get exchange requests instead of old trades
+        $query = ExchangeRequest::forProvider($provider->id)
+            ->with(['user', 'userSourceAccount', 'userDestinationAccount', 'fxProvider']);
+
+        // Filter by status
         if ($request->status) {
             $query->where('status', $request->status);
         }
 
-        $trades = $query->latest()->paginate(20);
+        $exchangeRequests = $query->latest()->paginate(20);
+
+        // Get provider's linked accounts for payment completion
+        $providerAccounts = LinkedAccount::where('user_id', $user->id)
+            ->where('status', 'active')
+            ->get();
+
+        // Statistics
+        $stats = [
+            'pending' => ExchangeRequest::forProvider($provider->id)->pending()->count(),
+            'awaiting_user_payment' => ExchangeRequest::forProvider($provider->id)->awaitingUserPayment()->count(),
+            'awaiting_provider_payment' => ExchangeRequest::forProvider($provider->id)->awaitingProviderPayment()->count(),
+            'completed_today' => ExchangeRequest::forProvider($provider->id)
+                ->where('status', 'completed')
+                ->whereDate('completed_at', today())
+                ->count(),
+        ];
 
         return Inertia::render('Paneta/ServiceProvider/Trades', [
             'provider' => $provider,
-            'trades' => $trades,
+            'exchangeRequests' => $exchangeRequests,
+            'providerAccounts' => $providerAccounts,
+            'stats' => $stats,
             'filters' => $request->only(['status']),
         ]);
+    }
+
+    public function acceptExchangeRequest(Request $request, ExchangeRequest $exchangeRequest)
+    {
+        $user = auth()->user();
+        $provider = FxProvider::find($user->fx_provider_id);
+
+        if (!$provider || $exchangeRequest->fx_provider_id !== $provider->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        if (!$exchangeRequest->isPending()) {
+            return back()->with('error', 'This exchange request cannot be accepted.');
+        }
+
+        $exchangeRequest->accept();
+
+        return back()->with('success', 'Exchange request accepted. User will be notified to complete payment.');
+    }
+
+    public function rejectExchangeRequest(Request $request, ExchangeRequest $exchangeRequest)
+    {
+        $user = auth()->user();
+        $provider = FxProvider::find($user->fx_provider_id);
+
+        if (!$provider || $exchangeRequest->fx_provider_id !== $provider->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        if (!$exchangeRequest->isPending()) {
+            return back()->with('error', 'This exchange request cannot be rejected.');
+        }
+
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $exchangeRequest->reject($validated['reason'] ?? null);
+
+        return back()->with('success', 'Exchange request rejected.');
+    }
+
+    public function completeExchangePayment(Request $request, ExchangeRequest $exchangeRequest)
+    {
+        $user = auth()->user();
+        $provider = FxProvider::find($user->fx_provider_id);
+
+        if (!$provider || $exchangeRequest->fx_provider_id !== $provider->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        if (!$exchangeRequest->isUserPaid()) {
+            return back()->with('error', 'User has not confirmed payment yet.');
+        }
+
+        $validated = $request->validate([
+            'provider_source_account_id' => 'required|exists:linked_accounts,id',
+        ]);
+
+        // Verify the account belongs to the provider
+        $account = LinkedAccount::find($validated['provider_source_account_id']);
+        if ($account->user_id !== $user->id) {
+            abort(403, 'Invalid account selected');
+        }
+
+        $exchangeRequest->markProviderPaid($validated['provider_source_account_id']);
+        $exchangeRequest->complete();
+
+        return back()->with('success', 'Payment completed successfully. Exchange is now complete.');
     }
 
     public function reports(): Response

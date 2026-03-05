@@ -186,8 +186,8 @@ const footerNavItems: NavItem[] = [];
         </SidebarHeader>
 
         <SidebarContent>
-            <!-- PANÉTA Section (only for regular users) -->
-            <SidebarGroup v-if="!isAdmin && !isRegulator" class="px-2 py-0">
+            <!-- PANÉTA Section (only for regular users, not service providers) -->
+            <SidebarGroup v-if="!isAdmin && !isRegulator && !isServiceProvider" class="px-2 py-0">
                 <SidebarGroupLabel>PANÉTA</SidebarGroupLabel>
                 <SidebarMenu>
                     <SidebarMenuItem v-for="item in panetaNavItems" :key="item.title">
