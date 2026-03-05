@@ -31,6 +31,26 @@ class User extends Authenticatable
         'kyc_status',
         'risk_tier',
         'role',
+        'account_type',
+        'country_code',
+        'phone',
+        'country_of_origin',
+        'city',
+        'address',
+        'profile_picture_path',
+        'pin_hash',
+        'date_of_birth',
+        'company_name',
+        'business_phone',
+        'company_type',
+        'business_sector',
+        'services_offered',
+        'registration_number',
+        'physical_address',
+        'website',
+        'tax_id',
+        'business_email',
+        'company_logo_path',
     ];
 
     /**
@@ -40,6 +60,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'pin_hash',
         'two_factor_secret',
         'two_factor_recovery_codes',
         'remember_token',
@@ -56,6 +77,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'date_of_birth' => 'date',
         ];
     }
 

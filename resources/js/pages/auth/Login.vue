@@ -57,7 +57,7 @@ defineProps<{
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="password" class="text-sm text-slate-500">Password</Label>
+                    <Label for="password" class="text-sm text-slate-500">4-Digit PIN</Label>
                     <div class="relative">
                         <Input
                             id="password"
@@ -66,7 +66,9 @@ defineProps<{
                             required
                             :tabindex="2"
                             autocomplete="current-password"
-                            placeholder="Password"
+                            placeholder="Enter your 4-digit PIN"
+                            maxlength="4"
+                            inputmode="numeric"
                             class="h-12 rounded-lg border-slate-200 bg-white px-4 pr-10 focus:border-blue-600 focus:ring-blue-600"
                         />
                     </div>

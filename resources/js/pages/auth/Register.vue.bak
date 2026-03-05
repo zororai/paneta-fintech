@@ -74,12 +74,12 @@ const submit = () => {
                     <div class="grid grid-cols-2 gap-4">
                         <div class="grid gap-2">
                             <Label for="country_code">Country Code</Label>
-                            <select id="country_code" v-model="form.country_code" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                            <select id="country_code" name="country_code" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                                 <option value="">Select country code</option>
                                 <option value="+263">+263 (Zimbabwe)</option>
                                 <option value="+27">+27 (South Africa)</option>
                             </select>
-                            <InputError :message="form.errors.country_code" />
+                            <InputError :message="errors.country_code" />
                         </div>
                         <div class="grid gap-2">
                             <Label for="phone">Phone Number</Label>
@@ -136,29 +136,29 @@ const submit = () => {
                             <Label for="pin">Create 4-Digit PIN</Label>
                             <Input
                                 id="pin"
-                                v-model="form.pin"
                                 type="password"
                                 required
+                                name="pin"
                                 placeholder="Enter PIN"
                                 maxlength="4"
                                 inputmode="numeric"
                                 autocomplete="new-password"
                             />
-                            <InputError :message="form.errors.pin" />
+                            <InputError :message="errors.pin" />
                         </div>
                         <div class="grid gap-2">
                             <Label for="pin_confirmation">Confirm PIN</Label>
                             <Input
                                 id="pin_confirmation"
-                                v-model="form.pin_confirmation"
                                 type="password"
                                 required
+                                name="pin_confirmation"
                                 placeholder="Confirm PIN"
                                 maxlength="4"
                                 inputmode="numeric"
                                 autocomplete="new-password"
                             />
-                            <InputError :message="form.errors.pin_confirmation" />
+                            <InputError :message="errors.pin_confirmation" />
                         </div>
                     </div>
                     <div class="flex gap-3">
@@ -175,136 +175,136 @@ const submit = () => {
                 <template v-else>
                     <div class="grid gap-2">
                         <Label for="company_name">Company Name</Label>
-                        <Input id="company_name" v-model="form.company_name" type="text" required autofocus placeholder="Enter company name" />
-                        <InputError :message="form.errors.company_name" />
+                        <Input id="company_name" type="text" required autofocus name="company_name" placeholder="Enter company name" />
+                        <InputError :message="errors.company_name" />
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="grid gap-2">
-                            <Label for="business_country_code">Country Code</Label>
-                            <select id="business_country_code" v-model="form.country_code" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                            <Label for="country_code">Country Code</Label>
+                            <select id="country_code" name="country_code" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                                 <option value="">Select country code</option>
                                 <option value="+263">+263 (Zimbabwe)</option>
                                 <option value="+27">+27 (South Africa)</option>
                             </select>
-                            <InputError :message="form.errors.country_code" />
+                            <InputError :message="errors.country_code" />
                         </div>
                         <div class="grid gap-2">
                             <Label for="business_phone">Business Phone Number</Label>
-                            <Input id="business_phone" v-model="form.business_phone" type="tel" required placeholder="Enter business phone number" />
-                            <InputError :message="form.errors.business_phone" />
+                            <Input id="business_phone" type="tel" required name="business_phone" placeholder="Enter business phone number" />
+                            <InputError :message="errors.business_phone" />
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="grid gap-2">
                             <Label for="company_type">Company Type</Label>
-                            <select id="company_type" v-model="form.company_type" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                            <select id="company_type" name="company_type" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                                 <option value="">Select company type</option>
                                 <option value="sole_proprietor">Sole Proprietor</option>
                                 <option value="partnership">Partnership</option>
                                 <option value="llc">LLC</option>
                                 <option value="corporation">Corporation</option>
                             </select>
-                            <InputError :message="form.errors.company_type" />
+                            <InputError :message="errors.company_type" />
                         </div>
                         <div class="grid gap-2">
                             <Label for="business_sector">Business Sector</Label>
-                            <select id="business_sector" v-model="form.business_sector" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                            <select id="business_sector" name="business_sector" required class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                                 <option value="">Select sector</option>
                                 <option value="technology">Technology</option>
                                 <option value="finance">Finance</option>
                                 <option value="retail">Retail</option>
                                 <option value="manufacturing">Manufacturing</option>
                             </select>
-                            <InputError :message="form.errors.business_sector" />
+                            <InputError :message="errors.business_sector" />
                         </div>
                     </div>
                     <div class="grid gap-2">
                         <Label for="services_offered">Services Offered (Optional)</Label>
-                        <textarea id="services_offered" v-model="form.services_offered" rows="3" placeholder="Describe your services" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"></textarea>
-                        <InputError :message="form.errors.services_offered" />
+                        <textarea id="services_offered" name="services_offered" rows="3" placeholder="Describe your services" class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"></textarea>
+                        <InputError :message="errors.services_offered" />
                     </div>
                     <div class="grid gap-2">
                         <Label for="registration_number">Business Registration Number</Label>
-                        <Input id="registration_number" v-model="form.registration_number" type="text" required placeholder="Enter registration number" />
-                        <InputError :message="form.errors.registration_number" />
+                        <Input id="registration_number" type="text" required name="registration_number" placeholder="Enter registration number" />
+                        <InputError :message="errors.registration_number" />
                     </div>
                     <div class="grid gap-2">
                         <Label for="physical_address">Physical Address</Label>
-                        <Input id="physical_address" v-model="form.physical_address" type="text" required placeholder="Enter business address" />
-                        <InputError :message="form.errors.physical_address" />
+                        <Input id="physical_address" type="text" required name="physical_address" placeholder="Enter business address" />
+                        <InputError :message="errors.physical_address" />
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="grid gap-2">
                             <Label for="website">Website (Optional)</Label>
-                            <Input id="website" v-model="form.website" type="url" placeholder="https://company.com" />
-                            <InputError :message="form.errors.website" />
+                            <Input id="website" type="url" name="website" placeholder="https://company.com" />
+                            <InputError :message="errors.website" />
                         </div>
                         <div class="grid gap-2">
                             <Label for="tax_id">Tax ID (Optional)</Label>
-                            <Input id="tax_id" v-model="form.tax_id" type="text" placeholder="Enter tax identification" />
-                            <InputError :message="form.errors.tax_id" />
+                            <Input id="tax_id" type="text" name="tax_id" placeholder="Enter tax identification" />
+                            <InputError :message="errors.tax_id" />
                         </div>
                     </div>
                     <div class="grid gap-2">
                         <Label for="business_email">Business Email</Label>
                         <Input
                             id="business_email"
-                            v-model="form.business_email"
                             type="email"
+                            name="business_email"
                             required
                             autocomplete="email"
                             placeholder="Enter business email"
                         />
-                        <InputError :message="form.errors.business_email" />
+                        <InputError :message="errors.business_email" />
                     </div>
                     <div class="grid gap-2">
                         <Label for="company_logo">Company Logo (Optional)</Label>
-                        <input id="company_logo" type="file" accept="image/*" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" @change="(e: Event) => form.company_logo = (e.target as HTMLInputElement).files?.[0] ?? null" />
+                        <Input id="company_logo" type="file" name="company_logo" accept="image/*" />
                         <p class="text-xs text-muted-foreground">Upload your company logo for professional branding</p>
-                        <InputError :message="form.errors.company_logo" />
+                        <InputError :message="errors.company_logo" />
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="grid gap-2">
-                            <Label for="business_pin">Create 4-Digit PIN</Label>
+                            <Label for="pin">Create 4-Digit PIN</Label>
                             <Input
-                                id="business_pin"
-                                v-model="form.pin"
+                                id="pin"
                                 type="password"
                                 required
+                                name="pin"
                                 placeholder="Enter PIN"
                                 maxlength="4"
                                 inputmode="numeric"
                                 autocomplete="new-password"
                             />
-                            <InputError :message="form.errors.pin" />
+                            <InputError :message="errors.pin" />
                         </div>
                         <div class="grid gap-2">
-                            <Label for="business_pin_confirmation">Confirm PIN</Label>
+                            <Label for="pin_confirmation">Confirm PIN</Label>
                             <Input
-                                id="business_pin_confirmation"
-                                v-model="form.pin_confirmation"
+                                id="pin_confirmation"
                                 type="password"
                                 required
+                                name="pin_confirmation"
                                 placeholder="Confirm PIN"
                                 maxlength="4"
                                 inputmode="numeric"
                                 autocomplete="new-password"
                             />
-                            <InputError :message="form.errors.pin_confirmation" />
+                            <InputError :message="errors.pin_confirmation" />
                         </div>
                     </div>
                     <div class="flex gap-3">
                         <Button type="button" variant="outline" class="flex-1" as-child>
                             <Link href="/register">Back</Link>
                         </Button>
-                        <Button type="submit" class="flex-1 gap-2" :disabled="form.processing">
-                            <Spinner v-if="form.processing" />
+                        <Button type="submit" class="flex-1 gap-2" :disabled="processing">
+                            <Spinner v-if="processing" />
                             <Building2 class="h-4 w-4" />
                             Register Business
                         </Button>
                     </div>
                 </template>
             </div>
-        </form>
+        </Form>
     </AuthBase>
 </template>
