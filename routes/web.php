@@ -213,7 +213,13 @@ Route::middleware(['auth', 'verified'])->prefix('paneta')->name('paneta.')->grou
     Route::middleware(EnsureUserIsServiceProvider::class)->prefix('service-provider')->name('service-provider.')->group(function () {
         Route::get('/', [ServiceProviderController::class, 'dashboard'])->name('dashboard');
         Route::get('/offers', [ServiceProviderController::class, 'offers'])->name('offers');
+        Route::post('/offers', [ServiceProviderController::class, 'storeOffer'])->name('offers.store');
+        Route::put('/offers/{offer}', [ServiceProviderController::class, 'updateOffer'])->name('offers.update');
+        Route::delete('/offers/{offer}', [ServiceProviderController::class, 'deleteOffer'])->name('offers.delete');
         Route::get('/trades', [ServiceProviderController::class, 'trades'])->name('trades');
+        Route::post('/exchange-requests/{exchangeRequest}/accept', [ServiceProviderController::class, 'acceptExchangeRequest'])->name('exchange-requests.accept');
+        Route::post('/exchange-requests/{exchangeRequest}/reject', [ServiceProviderController::class, 'rejectExchangeRequest'])->name('exchange-requests.reject');
+        Route::post('/exchange-requests/{exchangeRequest}/complete-payment', [ServiceProviderController::class, 'completeExchangePayment'])->name('exchange-requests.complete-payment');
         Route::get('/reports', [ServiceProviderController::class, 'reports'])->name('reports');
     });
 });

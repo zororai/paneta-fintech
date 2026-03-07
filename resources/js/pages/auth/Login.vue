@@ -59,7 +59,7 @@ const submit = () => {
                         :tabindex="1"
                         autocomplete="email"
                         placeholder="email@example.com"
-                        class="h-14 rounded-lg border-slate-200 bg-white px-4 text-base focus:border-blue-600 focus:ring-blue-600"
+                        class="h-14 rounded-lg border-slate-200 bg-white px-4 text-base !text-black focus:border-blue-600 focus:ring-blue-600"
                     />
                     <InputError :message="form.errors.email" />
                 </div>
@@ -77,7 +77,7 @@ const submit = () => {
                             placeholder="Enter your 4-digit PIN"
                             maxlength="4"
                             inputmode="numeric"
-                            class="h-14 rounded-lg border-slate-200 bg-white px-4 pr-10 text-base focus:border-blue-600 focus:ring-blue-600"
+                            class="h-14 rounded-lg border-slate-200 bg-white px-4 pr-10 text-base !text-black focus:border-blue-600 focus:ring-blue-600"
                         />
                     </div>
                     <InputError :message="form.errors.password" />

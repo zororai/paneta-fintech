@@ -191,6 +191,16 @@ const globalBrokers = [
     { id: 18, name: 'Questrade', country: 'Canada', type: 'Online Broker', markets: ['Stocks', 'Options', 'ETFs'], logo: '🇨🇦' },
     { id: 19, name: 'Wealthsimple', country: 'Canada', type: 'Robo-Advisor', markets: ['Stocks', 'ETFs', 'Crypto'], logo: '🤖' },
     { id: 20, name: 'Standard Bank Securities', country: 'South Africa', type: 'Full-Service Broker', markets: ['JSE Stocks', 'Bonds', 'ETFs'], logo: '🇿🇦' },
+    { id: 21, name: 'CBZ Bank', country: 'Zimbabwe', type: 'Commercial Bank', markets: ['ZSE Stocks', 'VFEX', 'Treasury Bills'], logo: '🇿🇼' },
+    { id: 22, name: 'Stanbic Bank Zimbabwe', country: 'Zimbabwe', type: 'Commercial Bank', markets: ['ZSE Stocks', 'VFEX', 'Money Market'], logo: '🇿🇼' },
+    { id: 23, name: 'FBC Bank', country: 'Zimbabwe', type: 'Commercial Bank', markets: ['ZSE Stocks', 'VFEX', 'Bonds'], logo: '🇿🇼' },
+    { id: 24, name: 'NMB Bank', country: 'Zimbabwe', type: 'Commercial Bank', markets: ['ZSE Stocks', 'VFEX', 'Treasury Bills'], logo: '🇿🇼' },
+    { id: 25, name: 'Econet Wireless Zimbabwe', country: 'Zimbabwe', type: 'Telecommunications Company', markets: ['ZSE Listed', 'Mobile Money'], logo: '🇿🇼' },
+    { id: 26, name: 'Old Mutual Zimbabwe', country: 'Zimbabwe', type: 'Asset Manager', markets: ['ZSE Stocks', 'Unit Trusts', 'Pension Funds'], logo: '🇿🇼' },
+    { id: 27, name: 'Morgan & Co', country: 'Zimbabwe', type: 'Stockbroker', markets: ['ZSE Stocks', 'VFEX'], logo: '🇿🇼' },
+    { id: 28, name: 'IH Securities', country: 'Zimbabwe', type: 'Stockbroker', markets: ['ZSE Stocks', 'VFEX'], logo: '🇿🇼' },
+    { id: 29, name: 'Datvest Securities', country: 'Zimbabwe', type: 'Stockbroker', markets: ['ZSE Stocks', 'VFEX'], logo: '🇿🇼' },
+    { id: 30, name: 'ZB Financial Holdings', country: 'Zimbabwe', type: 'Financial Services', markets: ['ZSE Stocks', 'Asset Management'], logo: '🇿🇼' },
 ];
 
 const filteredBrokers = computed(() => {
@@ -413,7 +423,7 @@ const viewBreakdown = (institution: LinkedInstitution) => {
             </div>
 
             <!-- Horizontal Tabs -->
-            <Tabs v-model="activeTab" default-value="portfolio" class="space-y-6">
+            <Tabs :model-value="activeTab" @update:model-value="activeTab = $event" default-value="portfolio" class="space-y-6">
                 <TabsList class="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
                     <TabsTrigger value="portfolio" class="gap-2">
                         <PieChart class="h-4 w-4" />

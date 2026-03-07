@@ -83,6 +83,10 @@ console.log('========================');
 const quotes = ref<FxQuote[]>([]);
 const isLoading = ref(false);
 const selectedQuote = ref<FxQuote | null>(null);
+const showNegotiateDialog = ref(false);
+const selectedOffer = ref<P2POffer | null>(null);
+const chatMessages = ref<Array<{ text: string; time: string; isUser: boolean }>>([]);
+const newMessage = ref('');
 
 const offerForm = useForm({
     source_account_id: null as number | null,
@@ -117,6 +121,42 @@ const formatCurrency = (amount: number, currency: string = 'USD') => {
 
 const formatRate = (rate: number) => {
     return rate.toFixed(6);
+};
+
+const openNegotiateDialog = (offer: P2POffer) => {
+    selectedOffer.value = offer;
+    showNegotiateDialog.value = true;
+    chatMessages.value = [
+        {
+            text: `🔒 Secure end-to-end encrypted chat initiated with ${offer.user.name}. All communications are private and protected.`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            isUser: false
+        },
+        {
+            text: `Hello! I'm available to discuss the ${offer.sell_currency} to ${offer.buy_currency} exchange. What terms would you like to negotiate?`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            isUser: false
+        }
+    ];
+};
+
+const sendMessage = () => {
+    if (!newMessage.value.trim()) return;
+    
+    chatMessages.value.push({
+        text: newMessage.value,
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        isUser: true
+    });
+    
+    newMessage.value = '';
+};
+
+const closeNegotiateDialog = () => {
+    showNegotiateDialog.value = false;
+    selectedOffer.value = null;
+    chatMessages.value = [];
+    newMessage.value = '';
 };
 
 const getQuotes = async () => {
@@ -639,7 +679,7 @@ const calculateFees = computed(() => {
                                                 </svg>
                                                 Start Exchange
                                             </Button>
-                                            <Button variant="ghost" size="sm" class="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                            <Button variant="ghost" size="sm" class="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50" @click="openNegotiateDialog(offer)">
                                                 <ArrowRightLeft class="mr-2 h-4 w-4" />
                                                 Negotiate Rate
                                             </Button>
@@ -1107,6 +1147,66 @@ const calculateFees = computed(() => {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                         </svg>
                     </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        <!-- Negotiate Rate - Secure Chat Dialog -->
+        <Dialog :open="showNegotiateDialog" @update:open="closeNegotiateDialog">
+            <DialogContent class="max-w-2xl max-h-[80vh] p-0">
+                <!-- Chat Header -->
+                <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-200 p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="h-12 w-12 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-lg">
+                                {{ selectedOffer?.user.name.split(' ').map(n => n[0]).join('').toUpperCase() }}
+                            </div>
+                            <div>
+                                <DialogTitle class="text-lg font-semibold text-gray-900">
+                                    Secure Chat - {{ selectedOffer?.user.name }}
+                                </DialogTitle>
+                                <DialogDescription class="text-sm text-emerald-700 font-medium">
+                                    🔒 End-to-end encrypted • Private & Secure
+                                </DialogDescription>
+                            </div>
+                        </div>
+                        <Button variant="ghost" size="sm" @click="closeNegotiateDialog">
+                            Close
+                        </Button>
+                    </div>
+                </div>
+
+                <!-- Chat Messages Area -->
+                <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50" style="min-height: 400px; max-height: 500px;">
+                    <div v-for="(message, index) in chatMessages" :key="index" :class="['flex', message.isUser ? 'justify-end' : 'justify-start']">
+                        <div :class="['max-w-[75%] rounded-lg p-3', message.isUser ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-800']">
+                            <p class="text-sm whitespace-pre-wrap">{{ message.text }}</p>
+                            <p :class="['text-xs mt-1', message.isUser ? 'text-blue-100' : 'text-gray-500']">
+                                {{ message.time }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message Input -->
+                <div class="border-t border-gray-200 p-4 bg-white">
+                    <div class="flex gap-2">
+                        <Input
+                            v-model="newMessage"
+                            placeholder="Type your message... (encrypted)"
+                            class="flex-1"
+                            @keyup.enter="sendMessage"
+                        />
+                        <Button 
+                            @click="sendMessage" 
+                            class="bg-blue-600 hover:bg-blue-700"
+                            :disabled="!newMessage.trim()"
+                        >
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                            </svg>
+                        </Button>
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>

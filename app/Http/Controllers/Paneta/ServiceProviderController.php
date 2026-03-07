@@ -81,6 +81,10 @@ class ServiceProviderController extends Controller
         $user = auth()->user();
         $provider = FxProvider::find($user->fx_provider_id);
 
+        if (!$provider) {
+            abort(403, 'No FX Provider associated with this account');
+        }
+
         $query = FxQuote::where('fx_provider_id', $provider->id)
             ->with('fxProvider');
 
@@ -99,6 +103,96 @@ class ServiceProviderController extends Controller
             'offers' => $offers,
             'filters' => $request->only(['status', 'currency_pair']),
         ]);
+    }
+
+    public function storeOffer(Request $request)
+    {
+        $user = auth()->user();
+        $provider = FxProvider::find($user->fx_provider_id);
+
+        if (!$provider) {
+            abort(403, 'No FX Provider associated with this account');
+        }
+
+        $validated = $request->validate([
+            'base_currency' => 'required|string|size:3',
+            'quote_currency' => 'required|string|size:3|different:base_currency',
+            'bid_rate' => 'required|numeric|min:0',
+            'ask_rate' => 'required|numeric|min:0|gte:bid_rate',
+            'spread_percentage' => 'nullable|numeric|min:0|max:100',
+            'expires_at' => 'nullable|date|after:now',
+        ]);
+
+        // Calculate spread if not provided
+        if (!isset($validated['spread_percentage'])) {
+            $validated['spread_percentage'] = (($validated['ask_rate'] - $validated['bid_rate']) / $validated['bid_rate']) * 100;
+        }
+
+        // Calculate mid rate
+        $validated['rate'] = ($validated['bid_rate'] + $validated['ask_rate']) / 2;
+
+        // Set default expiration if not provided (24 hours)
+        if (!isset($validated['expires_at'])) {
+            $validated['expires_at'] = now()->addHours(24);
+        }
+
+        $offer = FxQuote::create([
+            'fx_provider_id' => $provider->id,
+            'base_currency' => $validated['base_currency'],
+            'quote_currency' => $validated['quote_currency'],
+            'rate' => $validated['rate'],
+            'bid_rate' => $validated['bid_rate'],
+            'ask_rate' => $validated['ask_rate'],
+            'spread_percentage' => $validated['spread_percentage'],
+            'status' => 'active',
+            'expires_at' => $validated['expires_at'],
+        ]);
+
+        return back()->with('success', 'FX offer created successfully.');
+    }
+
+    public function updateOffer(Request $request, FxQuote $offer)
+    {
+        $user = auth()->user();
+        $provider = FxProvider::find($user->fx_provider_id);
+
+        if (!$provider || $offer->fx_provider_id !== $provider->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $validated = $request->validate([
+            'bid_rate' => 'required|numeric|min:0',
+            'ask_rate' => 'required|numeric|min:0|gte:bid_rate',
+            'spread_percentage' => 'nullable|numeric|min:0|max:100',
+            'status' => 'nullable|in:active,expired,cancelled',
+            'expires_at' => 'nullable|date|after:now',
+        ]);
+
+        // Calculate spread if not provided
+        if (!isset($validated['spread_percentage'])) {
+            $validated['spread_percentage'] = (($validated['ask_rate'] - $validated['bid_rate']) / $validated['bid_rate']) * 100;
+        }
+
+        // Calculate mid rate
+        $validated['rate'] = ($validated['bid_rate'] + $validated['ask_rate']) / 2;
+
+        $offer->update($validated);
+
+        return back()->with('success', 'FX offer updated successfully.');
+    }
+
+    public function deleteOffer(FxQuote $offer)
+    {
+        $user = auth()->user();
+        $provider = FxProvider::find($user->fx_provider_id);
+
+        if (!$provider || $offer->fx_provider_id !== $provider->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $offer->update(['status' => 'cancelled']);
+
+        return back()->with('success', 'FX offer cancelled successfully.');
     }
 
     public function trades(Request $request): Response
