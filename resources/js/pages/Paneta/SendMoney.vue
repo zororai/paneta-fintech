@@ -26,6 +26,7 @@ const props = defineProps<{
 }>();
 
 const activeTab = ref<'manual' | 'scan' | 'link'>('manual');
+const manualPaymentStep = ref(1); // 1: Payment Details, 2: Transaction Summary, 3: Confirmation
 const scanStep = ref<'camera' | 'details'>('camera');
 const scannedPaymentRequest = ref<any>(null);
 const selectedSourceAccountForScan = ref<number | null>(null);
@@ -80,6 +81,35 @@ const isCrossBorder = computed(() => {
     return selectedAccount.value.currency !== form.destination_currency;
 });
 
+const selectedDestinationInstitution = computed(() => {
+    return props.institutions.find(i => i.id === form.destination_institution_id);
+});
+
+const panetaFeePercent = 0.99;
+const fxProviderFeePercent = 0.5; // Example: 0.5% of exchanged amount
+const mockExchangeRate = 18.5; // Example: USD to ZAR rate
+
+const transactionAmount = computed(() => parseFloat(form.amount) || 0);
+
+const panetaFee = computed(() => {
+    return transactionAmount.value * (panetaFeePercent / 100);
+});
+
+const fxProviderFee = computed(() => {
+    if (!isCrossBorder.value) return 0;
+    const exchangedAmount = transactionAmount.value * mockExchangeRate;
+    return exchangedAmount * (fxProviderFeePercent / 100);
+});
+
+const totalAmountToDebit = computed(() => {
+    return transactionAmount.value + panetaFee.value + (fxProviderFee.value / mockExchangeRate);
+});
+
+const receivedAmount = computed(() => {
+    if (!isCrossBorder.value) return transactionAmount.value;
+    return (transactionAmount.value * mockExchangeRate) - fxProviderFee.value;
+});
+
 const selectedDestinationCountry = computed(() => {
     return countries.find(c => c.code === form.destination_country);
 });
@@ -109,9 +139,47 @@ watch(() => form.destination_country, (newCountry) => {
     form.destination_institution_id = null;
 });
 
+const nextManualStep = () => {
+    if (manualPaymentStep.value < 3) {
+        manualPaymentStep.value++;
+    }
+};
+
+const prevManualStep = () => {
+    if (manualPaymentStep.value > 1) {
+        manualPaymentStep.value--;
+    }
+};
+
+const canProceedToNextStep = computed(() => {
+    switch (manualPaymentStep.value) {
+        case 1: return form.source_account_id && form.amount && form.destination_country && form.destination_institution_id && form.destination_account && isValidAmount.value;
+        case 2: return true;
+        default: return false;
+    }
+});
+
 const submit = () => {
-    // This will route to Pre-Execution Controls stage
-    form.post('/paneta/transactions');
+    // Ensure all required fields are filled
+    if (!form.source_account_id || !form.amount || !form.destination_account || !form.destination_country || !form.destination_institution_id) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    // Submit the transaction
+    form.post('/paneta/transactions', {
+        onSuccess: () => {
+            console.log('Transaction submitted successfully');
+            alert('Transaction processed successfully! You will be redirected to Pre-Execution Controls.');
+            // Reset form and stepper
+            manualPaymentStep.value = 1;
+            form.reset();
+        },
+        onError: (errors) => {
+            console.error('Transaction submission errors:', errors);
+            alert('Error processing transaction. Please try again.');
+        },
+    });
 };
 
 const openCamera = () => {
@@ -296,9 +364,34 @@ const isValidAmount = computed(() => {
             </div>
 
             <!-- Manual Payment Tab -->
-            <div v-if="activeTab === 'manual'" class="grid gap-6 lg:grid-cols-2">
-                <!-- Payment Form -->
-                <Card>
+            <div v-if="activeTab === 'manual'" class="space-y-6">
+                <!-- Step Indicator -->
+                <div class="flex items-center justify-between">
+                    <div v-for="step in 3" :key="step" class="flex items-center flex-1">
+                        <div :class="[
+                            'flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold',
+                            manualPaymentStep >= step ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                        ]">
+                            {{ step }}
+                        </div>
+                        <div v-if="step < 3" :class="[
+                            'h-1 flex-1 mx-2',
+                            manualPaymentStep > step ? 'bg-primary' : 'bg-muted'
+                        ]" />
+                    </div>
+                </div>
+
+                <!-- Step Labels -->
+                <div class="flex justify-between text-sm text-muted-foreground">
+                    <span :class="manualPaymentStep >= 1 ? 'text-foreground font-medium' : ''">Payment Details</span>
+                    <span :class="manualPaymentStep >= 2 ? 'text-foreground font-medium' : ''">Transaction Summary</span>
+                    <span :class="manualPaymentStep >= 3 ? 'text-foreground font-medium' : ''">Confirmation</span>
+                </div>
+
+                <!-- Step 1: Payment Details -->
+                <div v-if="manualPaymentStep === 1" class="grid gap-6 lg:grid-cols-2">
+                    <!-- Payment Form -->
+                    <Card>
                     <CardHeader>
                         <CardTitle>Manual Payment</CardTitle>
                         <CardDescription>
@@ -476,30 +569,33 @@ const isValidAmount = computed(() => {
                                 </div>
                             </div>
 
-                            <Button
-                                type="submit"
-                                class="w-full"
-                                :disabled="
-                                    form.processing ||
-                                    !form.source_account_id ||
-                                    !form.amount ||
-                                    !form.destination_country ||
-                                    !form.destination_institution_id ||
-                                    !form.destination_account ||
-                                    !isValidAmount
-                                "
-                            >
-                                <Send class="mr-2 h-4 w-4" />
-                                <span v-if="form.processing">Processing...</span>
-                                <span v-else>Process Payment</span>
-                            </Button>
+                            <div class="flex gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    class="flex-1"
+                                    @click="prevManualStep"
+                                    v-if="manualPaymentStep > 1"
+                                >
+                                    Back
+                                </Button>
+                                <Button
+                                    type="button"
+                                    class="flex-1"
+                                    :disabled="!canProceedToNextStep"
+                                    @click="nextManualStep"
+                                >
+                                    Next
+                                    <Send class="ml-2 h-4 w-4" />
+                                </Button>
+                            </div>
                         </form>
                     </CardContent>
                 </Card>
 
-                <!-- Summary Card -->
-                <div class="space-y-6">
-                    <Card v-if="selectedAccount && form.amount">
+                    <!-- Summary Card for Step 1 -->
+                    <div class="space-y-6">
+                        <Card v-if="selectedAccount && form.amount">
                         <CardHeader>
                             <CardTitle>Transaction Summary</CardTitle>
                         </CardHeader>
@@ -514,7 +610,11 @@ const isValidAmount = computed(() => {
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-muted-foreground">To</span>
-                                <span class="font-medium">{{ form.destination_account || '-' }}</span>
+                                <span class="font-medium">{{ selectedDestinationInstitution?.name || '-' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-muted-foreground">Destination Account</span>
+                                <span class="text-sm font-mono">{{ form.destination_account || '-' }}</span>
                             </div>
                             <div v-if="form.destination_country" class="flex justify-between">
                                 <span class="text-muted-foreground">Destination Country</span>
@@ -525,19 +625,34 @@ const isValidAmount = computed(() => {
                                 <span class="text-xl font-bold">
                                     {{
                                         formatCurrency(
-                                            parseFloat(form.amount) || 0,
+                                            transactionAmount,
                                             selectedAccount.currency
                                         )
                                     }}
                                 </span>
                             </div>
-                            <div v-if="isCrossBorder" class="rounded-md bg-orange-50 p-3 dark:bg-orange-950">
+                            <div class="rounded-md bg-orange-50 p-3 dark:bg-orange-950 space-y-2">
                                 <p class="text-xs font-semibold text-orange-700 dark:text-orange-300">
-                                    Cross-Border Transaction
+                                    PANÉTA Fee (0.99%)
                                 </p>
-                                <p class="mt-1 text-xs text-orange-600 dark:text-orange-400">
-                                    {{ form.source_currency }} → {{ form.destination_currency }}
+                                <p class="text-xs text-orange-600 dark:text-orange-400">
+                                    {{ formatCurrency(panetaFee, selectedAccount.currency) }}
                                 </p>
+                                <hr class="border-orange-200 dark:border-orange-800" />
+                                <div class="space-y-1.5 text-xs">
+                                    <div class="flex justify-between">
+                                        <span class="font-semibold text-orange-800 dark:text-orange-200">Total Amount</span>
+                                        <span class="font-bold text-orange-800 dark:text-orange-200">
+                                            {{ formatCurrency(totalAmountToDebit, selectedAccount.currency) }}
+                                        </span>
+                                    </div>
+                                    <div v-if="isCrossBorder" class="flex justify-between pt-1">
+                                        <span class="font-semibold text-green-700 dark:text-green-300">Received Amount</span>
+                                        <span class="font-bold text-green-700 dark:text-green-300">
+                                            {{ formatCurrency(receivedAmount, form.destination_currency) }}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                             <hr />
                             <div class="flex justify-between">
@@ -598,6 +713,118 @@ const isValidAmount = computed(() => {
                             <Button as="a" href="/paneta/accounts">Link Account</Button>
                         </CardContent>
                     </Card>
+                    </div>
+                </div>
+
+                <!-- Step 2: Transaction Summary -->
+                <div v-if="manualPaymentStep === 2" class="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Transaction Summary</CardTitle>
+                            <CardDescription>Review your transaction details before confirming</CardDescription>
+                        </CardHeader>
+                        <CardContent class="space-y-6">
+                            <div class="space-y-4">
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">From</span>
+                                    <span class="font-medium">{{ selectedAccount?.institution?.name }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Account</span>
+                                    <span class="text-sm font-mono">{{ selectedAccount?.account_identifier }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">To</span>
+                                    <span class="font-medium">{{ selectedDestinationInstitution?.name || '-' }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Destination Account</span>
+                                    <span class="text-sm font-mono">{{ form.destination_account || '-' }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Destination Country</span>
+                                    <span>{{ selectedDestinationCountry?.name || form.destination_country }}</span>
+                                </div>
+                                <hr />
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Amount</span>
+                                    <span class="text-xl font-bold">
+                                        {{ formatCurrency(transactionAmount, selectedAccount?.currency || 'USD') }}
+                                    </span>
+                                </div>
+                                <div :class="['rounded-md p-3 space-y-2', isCrossBorder ? 'bg-orange-50 dark:bg-orange-950' : 'bg-blue-50 dark:bg-blue-950']">
+                                    <p :class="['text-xs font-semibold', isCrossBorder ? 'text-orange-700 dark:text-orange-300' : 'text-blue-700 dark:text-blue-300']">
+                                        {{ isCrossBorder ? 'Cross-Border Transaction' : 'Transaction Fees' }}
+                                    </p>
+                                    <div class="space-y-1.5 text-xs">
+                                        <div class="flex justify-between">
+                                            <span :class="isCrossBorder ? 'text-orange-700 dark:text-orange-300' : 'text-blue-700 dark:text-blue-300'">PANÉTA Fee ({{ panetaFeePercent }}%)</span>
+                                            <span :class="['font-medium', isCrossBorder ? 'text-orange-700 dark:text-orange-300' : 'text-blue-700 dark:text-blue-300']">
+                                                {{ formatCurrency(panetaFee, selectedAccount?.currency || 'USD') }}
+                                            </span>
+                                        </div>
+                                        <div :class="['flex justify-between pt-1 border-t', isCrossBorder ? 'border-orange-200 dark:border-orange-800' : 'border-blue-200 dark:border-blue-800']">
+                                            <span :class="['font-semibold', isCrossBorder ? 'text-orange-800 dark:text-orange-200' : 'text-blue-800 dark:text-blue-200']">Total Amount to Debit</span>
+                                            <span :class="['font-bold', isCrossBorder ? 'text-orange-800 dark:text-orange-200' : 'text-blue-800 dark:text-blue-200']">
+                                                {{ formatCurrency(totalAmountToDebit, selectedAccount?.currency || 'USD') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr />
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Available Balance</span>
+                                    <span>{{ formatCurrency(selectedAccount?.mock_balance || 0, selectedAccount?.currency || 'USD') }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Remaining Balance</span>
+                                    <span :class="(selectedAccount?.mock_balance || 0) - transactionAmount < 0 ? 'text-red-500' : 'text-green-500'">
+                                        {{ formatCurrency((selectedAccount?.mock_balance || 0) - transactionAmount, selectedAccount?.currency || 'USD') }}
+                                    </span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <div class="flex gap-3">
+                        <Button variant="outline" class="flex-1" @click="prevManualStep">
+                            Back
+                        </Button>
+                        <Button class="flex-1" @click="nextManualStep">
+                            Confirm & Process
+                            <Send class="ml-2 h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Confirmation -->
+                <div v-if="manualPaymentStep === 3" class="space-y-6">
+                    <Card class="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+                        <CardContent class="pt-6">
+                            <div class="flex items-center gap-4">
+                                <div class="rounded-full bg-green-600 p-3">
+                                    <Send class="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-green-900 dark:text-green-100">Ready to Process</h3>
+                                    <p class="text-sm text-green-700 dark:text-green-300">Click "Process Payment" to complete your transaction</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <div class="flex gap-3">
+                        <Button variant="outline" class="flex-1" @click="prevManualStep">
+                            Back
+                        </Button>
+                        <Button class="flex-1 bg-green-600 hover:bg-green-700" @click="submit" :disabled="form.processing">
+                            <span v-if="form.processing">Processing...</span>
+                            <span v-else>
+                                <Send class="mr-2 h-4 w-4 inline" />
+                                Process Payment
+                            </span>
+                        </Button>
+                    </div>
                 </div>
             </div>
 

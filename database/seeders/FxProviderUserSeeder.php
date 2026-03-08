@@ -30,7 +30,8 @@ class FxProviderUserSeeder extends Seeder
             [
                 'name' => 'Global FX Solutions',
                 'email' => 'provider@globalfx.com',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('1234'),
+                'pin_hash' => Hash::make('1234'),
                 'email_verified_at' => now(),
                 'role' => 'fx_provider',
                 'kyc_status' => 'verified',
@@ -58,7 +59,8 @@ class FxProviderUserSeeder extends Seeder
             [
                 'name' => 'Zimbabwe Currency Exchange',
                 'email' => 'provider@zimfx.co.zw',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('1234'),
+                'pin_hash' => Hash::make('1234'),
                 'email_verified_at' => now(),
                 'role' => 'fx_provider',
                 'kyc_status' => 'verified',
@@ -68,7 +70,7 @@ class FxProviderUserSeeder extends Seeder
         );
 
         $this->command->info('FX Provider test accounts created successfully!');
-        $this->command->info('Account 1: provider@globalfx.com / password');
-        $this->command->info('Account 2: provider@zimfx.co.zw / password');
+        $this->command->info('Account 1: provider@globalfx.com / PIN: 1234');
+        $this->command->info('Account 2: provider@zimfx.co.zw / PIN: 1234');
     }
 }

@@ -26,7 +26,8 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('1234'),
+            'pin_hash' => Hash::make('1234'),
             'kyc_status' => 'verified',
             'risk_tier' => 'low',
             'role' => 'user',
@@ -36,7 +37,8 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('1234'),
+            'pin_hash' => Hash::make('1234'),
             'kyc_status' => 'verified',
             'risk_tier' => 'low',
             'role' => 'admin',
@@ -46,10 +48,14 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Regulator User',
             'email' => 'regulator@example.com',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('1234'),
+            'pin_hash' => Hash::make('1234'),
             'kyc_status' => 'verified',
             'risk_tier' => 'low',
             'role' => 'regulator',
         ]);
+
+        // Seed demo accounts (personal and business)
+        $this->call(DemoAccountsSeeder::class);
     }
 }

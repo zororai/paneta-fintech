@@ -68,11 +68,14 @@ const selectedCategory = ref<string | null>(null);
 const selectedInstitution = ref<number | null>(null);
 const consentGranted = ref(false);
 
+const accountTypes = ['Debit', 'Credit', 'Savings', 'Money Market', 'Investment', 'Business'];
+
 const form = useForm({
     institution_id: null as number | null,
     country: '',
     account_number: '',
     account_holder_name: '',
+    account_type: 'Debit',
     currency: 'USD',
 });
 
@@ -191,6 +194,7 @@ const linkAccount = () => {
         country: form.country,
         account_number: form.account_number,
         account_holder_name: form.account_holder_name,
+        account_type: form.account_type,
         currency: form.currency,
     });
     
@@ -222,7 +226,7 @@ const canProceed = computed(() => {
         case 1: return selectedCountry.value !== null;
         case 2: return selectedCategory.value !== null;
         case 3: return selectedInstitution.value !== null;
-        case 4: return form.account_number && form.account_holder_name && form.currency;
+        case 4: return form.account_number && form.account_holder_name && form.account_type && form.currency;
         case 5: return consentGranted.value;
         default: return false;
     }
@@ -428,6 +432,29 @@ const viewStatements = (account: LinkedAccount) => {
                                     </div>
 
                                     <div>
+                                        <Label>Account Type</Label>
+                                        <div class="flex flex-wrap gap-2 mt-2">
+                                            <button
+                                                v-for="type in accountTypes"
+                                                :key="type"
+                                                type="button"
+                                                :class="[
+                                                    'rounded-md border px-4 py-2 text-sm transition-colors',
+                                                    form.account_type === type
+                                                        ? 'border-primary bg-primary text-primary-foreground'
+                                                        : 'hover:border-primary/50',
+                                                ]"
+                                                @click="form.account_type = type"
+                                            >
+                                                {{ type }}
+                                            </button>
+                                        </div>
+                                        <p v-if="form.errors.account_type" class="text-sm text-destructive mt-1">
+                                            {{ form.errors.account_type }}
+                                        </p>
+                                    </div>
+
+                                    <div>
                                         <Label>Account Currency</Label>
                                         <div class="flex flex-wrap gap-2 mt-2">
                                             <button
@@ -469,6 +496,10 @@ const viewStatements = (account: LinkedAccount) => {
                                         <div class="flex justify-between">
                                             <span class="text-muted-foreground">Account Number:</span>
                                             <span class="font-medium">{{ form.account_number }}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-muted-foreground">Account Type:</span>
+                                            <span class="font-medium">{{ form.account_type }}</span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-muted-foreground">Currency:</span>

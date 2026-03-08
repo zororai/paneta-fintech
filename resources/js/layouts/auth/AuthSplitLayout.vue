@@ -10,11 +10,9 @@ defineProps<{
 </script>
 
 <template>
-    <div class="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+    <div class="relative min-h-screen overflow-hidden bg-blue-600 text-white">
         <div class="absolute inset-0">
-            <div class="absolute inset-0 bg-gradient-to-bl from-blue-900 via-slate-900 to-black opacity-90"></div>
-            <div class="absolute inset-y-0 left-1/2 h-[160%] w-[60%] -translate-x-1/2 rotate-6 transform bg-gradient-to-br from-cyan-500/20 via-blue-500/10 to-transparent blur-3xl"></div>
-            <div class="absolute -bottom-32 right-10 h-96 w-96 rounded-full bg-blue-400/10 blur-[120px]"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-700 opacity-100"></div>
         </div>
 
         <div class="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
