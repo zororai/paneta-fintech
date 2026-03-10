@@ -53,7 +53,7 @@ class PaymentRequestController extends Controller
             'linked_account_id' => 'nullable|exists:linked_accounts,id',
             'description' => 'nullable|string|max:255',
             'allow_partial' => 'boolean',
-            'expires_in_minutes' => 'nullable|integer|min:5|max:10080',
+            'expires_in_days' => 'nullable|integer|min:1|max:365',
         ]);
 
         $linkedAccount = null;
@@ -71,7 +71,7 @@ class PaymentRequestController extends Controller
             linkedAccount: $linkedAccount,
             description: $validated['description'] ?? null,
             allowPartial: $validated['allow_partial'] ?? false,
-            expiresInMinutes: $validated['expires_in_minutes'] ?? 60
+            expiresInMinutes: ($validated['expires_in_days'] ?? 7) * 24 * 60
         );
 
         return back()->with('success', 'Payment request created successfully.');
