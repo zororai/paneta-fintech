@@ -69,11 +69,6 @@ const baseNavItems: NavItem[] = [
         href: '/paneta/bills',
         icon: Receipt,
     },
-    {
-        title: 'Audit Logs',
-        href: '/paneta/audit-logs',
-        icon: FileText,
-    },
 ];
 
 // Business-only nav items (restricted for personal accounts)

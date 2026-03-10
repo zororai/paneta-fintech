@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     Dialog,
@@ -123,6 +124,73 @@ const majorCurrencyPairs = ref([
     { pair: 'USD/CAD', rate: 1.3456, change: '+0.18%', volume: '$945M', trend: 'up' },
     { pair: 'USD/CHF', rate: 0.8976, change: '-0.11%', volume: '$758M', trend: 'down' },
 ]);
+
+const smartAlertForm = useForm({
+    currency_pair: '',
+    target_rate: null as number | null,
+    alert_type: '',
+    email_notifications: false,
+    sms_notifications: false,
+    push_notifications: false,
+});
+
+const activeAlerts = ref([
+    {
+        id: 1,
+        currency_pair: 'USD/EUR',
+        target_rate: 0.8500,
+        alert_type: 'below',
+        status: 'active',
+        created_at: '2 days ago',
+    },
+    {
+        id: 2,
+        currency_pair: 'USD/ZWL',
+        target_rate: 250.00,
+        alert_type: 'above',
+        status: 'triggered',
+        created_at: '1 week ago',
+    },
+    {
+        id: 3,
+        currency_pair: 'EUR/GBP',
+        target_rate: 0.9300,
+        alert_type: 'change_1_percent',
+        status: 'active',
+        created_at: '3 days ago',
+    },
+]);
+
+const currencyPairOptions = [
+    'USD/EUR',
+    'USD/GBP',
+    'USD/ZWL',
+    'EUR/GBP',
+    'USD/JPY',
+    'USD/AUD',
+    'USD/CAD',
+    'USD/CHF',
+    'GBP/USD',
+    'EUR/USD',
+];
+
+const alertTypeOptions = [
+    { value: 'above', label: 'Rate Goes Above' },
+    { value: 'below', label: 'Rate Goes Below' },
+    { value: 'change_1_percent', label: 'Significant Change (+/- 1%)' },
+];
+
+const createSmartAlert = () => {
+    smartAlertForm.post('/paneta/smart-alerts', {
+        onSuccess: () => {
+            smartAlertForm.reset();
+        },
+    });
+};
+
+const deleteAlert = (alertId: number) => {
+    router.delete(`/paneta/smart-alerts/${alertId}`);
+};
 
 const calculateLiveRate = computed(() => {
     const pair = majorCurrencyPairs.value.find(p => 
@@ -1000,21 +1068,187 @@ const calculateFees = computed(() => {
 
                 <!-- Smart Alerts Tab -->
                 <TabsContent value="smart-alerts" class="space-y-6">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
+                        <div class="flex items-start gap-3">
+                            <div class="rounded-full bg-orange-100 p-2">
+                                <Bell class="h-5 w-5 text-orange-600" />
+                            </div>
+                            <div class="flex-1">
+                                <h2 class="text-xl font-bold text-orange-900 mb-1 flex items-center gap-2">
+                                    Smart Rate Alerts & Notifications
+                                    <Badge class="bg-orange-600 text-white">AI Powered</Badge>
+                                </h2>
+                                <p class="text-sm text-orange-800">
+                                    Set intelligent alerts for optimal exchange rates, market movements, and trading opportunities. Our AI analyzes market trends to notify you of the best times to exchange.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Create Smart Alert -->
+                    <Card class="border-2 border-orange-200">
+                        <CardHeader class="bg-gradient-to-r from-orange-50 to-amber-50">
+                            <CardTitle class="flex items-center gap-2 text-orange-900">
+                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z"/>
+                                </svg>
+                                Create Smart Alert
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent class="p-6">
+                            <form @submit.prevent="createSmartAlert" class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Left Column -->
+                                    <div class="space-y-4">
+                                        <!-- Currency Pair -->
+                                        <div class="space-y-2">
+                                            <Label for="currency_pair" class="text-sm font-semibold">Currency Pair</Label>
+                                            <Select v-model="smartAlertForm.currency_pair">
+                                                <SelectTrigger id="currency_pair" class="h-11">
+                                                    <SelectValue placeholder="Select currency pair" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem v-for="pair in currencyPairOptions" :key="pair" :value="pair">
+                                                        {{ pair }}
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <!-- Target Rate -->
+                                        <div class="space-y-2">
+                                            <Label for="target_rate" class="text-sm font-semibold">Target Rate</Label>
+                                            <Input 
+                                                id="target_rate"
+                                                v-model.number="smartAlertForm.target_rate" 
+                                                type="number" 
+                                                step="0.0001"
+                                                placeholder="e.g., 0.8500"
+                                                class="h-11"
+                                            />
+                                        </div>
+
+                                        <!-- Alert Type -->
+                                        <div class="space-y-2">
+                                            <Label for="alert_type" class="text-sm font-semibold">Alert Type</Label>
+                                            <Select v-model="smartAlertForm.alert_type">
+                                                <SelectTrigger id="alert_type" class="h-11">
+                                                    <SelectValue placeholder="Select alert type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem v-for="type in alertTypeOptions" :key="type.value" :value="type.value">
+                                                        {{ type.label }}
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Right Column -->
+                                    <div class="space-y-4">
+                                        <Label class="text-sm font-semibold">Notification Method</Label>
+                                        <div class="space-y-3 bg-gray-50 rounded-lg p-4 border">
+                                            <div class="flex items-center space-x-3">
+                                                <Checkbox 
+                                                    id="email_notifications" 
+                                                    v-model:checked="smartAlertForm.email_notifications"
+                                                />
+                                                <Label for="email_notifications" class="text-sm font-normal cursor-pointer">
+                                                    Email notifications
+                                                </Label>
+                                            </div>
+                                            <div class="flex items-center space-x-3">
+                                                <Checkbox 
+                                                    id="sms_notifications" 
+                                                    v-model:checked="smartAlertForm.sms_notifications"
+                                                />
+                                                <Label for="sms_notifications" class="text-sm font-normal cursor-pointer">
+                                                    SMS notifications
+                                                </Label>
+                                            </div>
+                                            <div class="flex items-center space-x-3">
+                                                <Checkbox 
+                                                    id="push_notifications" 
+                                                    v-model:checked="smartAlertForm.push_notifications"
+                                                />
+                                                <Label for="push_notifications" class="text-sm font-normal cursor-pointer">
+                                                    Push notifications
+                                                </Label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Submit Button -->
+                                <div class="pt-4">
+                                    <Button 
+                                        type="submit" 
+                                        class="w-full h-12 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-base"
+                                        :disabled="smartAlertForm.processing || !smartAlertForm.currency_pair || !smartAlertForm.target_rate || !smartAlertForm.alert_type"
+                                    >
+                                        Create Alert
+                                    </Button>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
+
+                    <!-- Active Alerts -->
                     <Card>
                         <CardHeader>
-                            <CardTitle class="flex items-center gap-2">
-                                <Bell class="h-5 w-5" />
-                                Smart Alerts
-                            </CardTitle>
+                            <CardTitle class="text-xl">Active Alerts</CardTitle>
                             <CardDescription>
-                                Set up alerts for favorable exchange rates and market movements
+                                Monitor your active and triggered alerts
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div class="flex flex-col items-center justify-center py-12 text-center">
+                            <div v-if="activeAlerts.length > 0" class="space-y-3">
+                                <div 
+                                    v-for="alert in activeAlerts" 
+                                    :key="alert.id"
+                                    class="flex items-center justify-between p-4 rounded-lg border hover:shadow-md transition-shadow"
+                                    :class="alert.status === 'triggered' ? 'bg-orange-50 border-orange-200' : 'bg-white'"
+                                >
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-3 mb-2">
+                                            <h4 class="font-bold text-lg">{{ alert.currency_pair }}</h4>
+                                            <Badge 
+                                                :class="alert.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'"
+                                            >
+                                                {{ alert.status === 'active' ? 'Active' : 'Triggered' }}
+                                            </Badge>
+                                        </div>
+                                        <div class="text-sm text-muted-foreground space-y-1">
+                                            <p>
+                                                <span class="font-medium">Target:</span> 
+                                                {{ alert.target_rate.toFixed(4) }} • 
+                                                <span class="font-medium">
+                                                    {{ alert.alert_type === 'above' ? 'Above' : alert.alert_type === 'below' ? 'Below' : 'Change 1%' }}
+                                                </span>
+                                            </p>
+                                            <p>Created {{ alert.created_at }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <Button variant="outline" size="sm" class="text-blue-600 border-blue-600 hover:bg-blue-50">
+                                            Edit
+                                        </Button>
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            class="text-red-600 border-red-600 hover:bg-red-50"
+                                            @click="deleteAlert(alert.id)"
+                                        >
+                                            Delete
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-else class="flex flex-col items-center justify-center py-12 text-center">
                                 <Bell class="mb-4 h-12 w-12 text-muted-foreground" />
                                 <p class="text-muted-foreground">
-                                    Smart Alerts functionality coming soon
+                                    No active alerts. Create your first alert above.
                                 </p>
                             </div>
                         </CardContent>
