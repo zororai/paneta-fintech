@@ -167,6 +167,8 @@ const stockExchangesByRegion = {
         { id: 'zse', name: 'Zimbabwe Stock Exchange (ZSE)', country: 'Zimbabwe', companies: 65 },
         { id: 'vfex', name: 'Victoria Falls Stock Exchange (VFEX)', country: 'Zimbabwe', companies: 15 },
         { id: 'nse', name: 'Nigerian Stock Exchange (NSE)', country: 'Nigeria', companies: 160 },
+        { id: 'gse', name: 'Ghana Stock Exchange (GSE)', country: 'Ghana', companies: 35 },
+        { id: 'nse-kenya', name: 'Nairobi Securities Exchange (NSE)', country: 'Kenya', companies: 65 },
     ],
 };
 
@@ -1055,7 +1057,7 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                                     Choose the plan that best fits your investment needs
                                 </DialogDescription>
                             </DialogHeader>
-                            <div class="grid gap-4 md:grid-cols-3 py-4">
+                            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4 py-4">
                                 <!-- Silver Tier -->
                                 <Card class="border-2 border-purple-200">
                                     <CardHeader class="bg-purple-50">
@@ -1123,18 +1125,16 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                                 </Card>
 
                                 <!-- Platinum Tier -->
-                                <Card class="border-2 border-blue-400">
-                                    <CardHeader class="bg-blue-50">
+                                <Card class="border-2 border-slate-400">
+                                    <CardHeader class="bg-gradient-to-br from-slate-50 to-slate-100">
                                         <CardTitle class="flex items-center gap-2">
-                                            <svg class="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                            </svg>
+                                            <Sparkles class="h-5 w-5 text-slate-600" />
                                             Platinum Tier
                                         </CardTitle>
-                                        <div class="text-2xl font-bold">$99/mo</div>
+                                        <div class="text-2xl font-bold">$149/mo</div>
                                     </CardHeader>
                                     <CardContent class="pt-4">
-                                        <p class="text-sm text-muted-foreground mb-4">Institutional Investors</p>
+                                        <p class="text-sm text-muted-foreground mb-4">High Net Worth Investors</p>
                                         <ul class="space-y-2 text-sm">
                                             <li class="flex items-center gap-2">
                                                 <CheckCircle class="h-4 w-4 text-green-600" />
@@ -1150,10 +1150,57 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                                             </li>
                                             <li class="flex items-center gap-2">
                                                 <CheckCircle class="h-4 w-4 text-green-600" />
+                                                Tax optimization tools
+                                            </li>
+                                            <li class="flex items-center gap-2">
+                                                <CheckCircle class="h-4 w-4 text-green-600" />
                                                 Priority support
                                             </li>
                                         </ul>
-                                        <Button class="mt-4 w-full bg-blue-600 hover:bg-blue-700">Upgrade</Button>
+                                        <Button class="mt-4 w-full bg-slate-600 hover:bg-slate-700">Upgrade</Button>
+                                    </CardContent>
+                                </Card>
+
+                                <!-- Diamond Tier -->
+                                <Card class="border-2 border-cyan-400 shadow-lg">
+                                    <CardHeader class="bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50">
+                                        <CardTitle class="flex items-center gap-2">
+                                            <svg class="h-5 w-5 text-cyan-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M10 2l2.5 5.5L18 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-1.5L10 2z"/>
+                                            </svg>
+                                            Diamond Tier
+                                        </CardTitle>
+                                        <div class="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">$299/mo</div>
+                                    </CardHeader>
+                                    <CardContent class="pt-4">
+                                        <p class="text-sm text-muted-foreground mb-4">Institutional & Family Offices</p>
+                                        <ul class="space-y-2 text-sm">
+                                            <li class="flex items-center gap-2">
+                                                <CheckCircle class="h-4 w-4 text-green-600" />
+                                                All Platinum features
+                                            </li>
+                                            <li class="flex items-center gap-2">
+                                                <CheckCircle class="h-4 w-4 text-green-600" />
+                                                Dedicated account manager
+                                            </li>
+                                            <li class="flex items-center gap-2">
+                                                <CheckCircle class="h-4 w-4 text-green-600" />
+                                                White-label reporting
+                                            </li>
+                                            <li class="flex items-center gap-2">
+                                                <CheckCircle class="h-4 w-4 text-green-600" />
+                                                API access
+                                            </li>
+                                            <li class="flex items-center gap-2">
+                                                <CheckCircle class="h-4 w-4 text-green-600" />
+                                                Multi-entity management
+                                            </li>
+                                            <li class="flex items-center gap-2">
+                                                <CheckCircle class="h-4 w-4 text-green-600" />
+                                                24/7 concierge support
+                                            </li>
+                                        </ul>
+                                        <Button class="mt-4 w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700">Upgrade</Button>
                                     </CardContent>
                                 </Card>
                             </div>
@@ -1560,25 +1607,64 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                                 Connect and manage trading accounts from various financial markets and exchanges worldwide. Access equities, fixed-income, commodities, and other asset classes from a single unified platform.
                             </p>
                         </div>
-                        <div class="flex gap-2">
-                            <Button 
-                                variant="default" 
-                                class="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                                @click="openLinkTradingAccountDialog"
-                            >
-                                <Globe class="h-4 w-4" />
-                                Link Global Market Trading Account
-                            </Button>
-                            <Button variant="outline" class="gap-2">
-                                <Activity class="h-4 w-4" />
-                                Blockchain Integration
-                            </Button>
-                            <Button variant="outline" class="gap-2">
-                                <RefreshCw class="h-4 w-4" />
-                                Reset Integration
-                            </Button>
-                        </div>
                     </div>
+
+                    <!-- Link New Account Section - MOVED TO TOP -->
+                    <Card class="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2 text-blue-900">
+                                <Plus class="h-5 w-5" />
+                                Link New Trading Account
+                            </CardTitle>
+                            <CardDescription>
+                                Connect accounts from brokers, exchanges, and investment platforms worldwide to aggregate your portfolio data
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="flex gap-3 mb-4">
+                                <Button 
+                                    variant="default" 
+                                    class="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                                    @click="openLinkTradingAccountDialog"
+                                >
+                                    <Globe class="h-4 w-4" />
+                                    Link Global Market Trading Account
+                                </Button>
+                                <Button variant="outline" class="gap-2">
+                                    <Activity class="h-4 w-4" />
+                                    Blockchain Integration
+                                </Button>
+                            </div>
+                            <div class="grid gap-3 md:grid-cols-4">
+                                <Button variant="outline" class="h-20 flex flex-col gap-2 hover:bg-blue-100 hover:border-blue-400" as-child>
+                                    <a href="/paneta/connect-trading-account/stockbrokers">
+                                        <BarChart3 class="h-5 w-5" />
+                                        <span class="text-sm font-medium">Stock Brokers</span>
+                                    </a>
+                                </Button>
+                                <Button variant="outline" class="h-20 flex flex-col gap-2 hover:bg-green-100 hover:border-green-400" as-child>
+                                    <a href="/paneta/connect-trading-account/crypto">
+                                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/>
+                                        </svg>
+                                        <span class="text-sm font-medium">Crypto Exchanges</span>
+                                    </a>
+                                </Button>
+                                <Button variant="outline" class="h-20 flex flex-col gap-2 hover:bg-purple-100 hover:border-purple-400" as-child>
+                                    <a href="/paneta/connect-trading-account/forex">
+                                        <DollarSign class="h-5 w-5" />
+                                        <span class="text-sm font-medium">Forex Platforms</span>
+                                    </a>
+                                </Button>
+                                <Button variant="outline" class="h-20 flex flex-col gap-2 hover:bg-orange-100 hover:border-orange-400" as-child>
+                                    <a href="/paneta/connect-trading-account/commodities">
+                                        <Building2 class="h-5 w-5" />
+                                        <span class="text-sm font-medium">Commodities</span>
+                                    </a>
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
 
                     <!-- Multi-Market Integration -->
                     <div class="space-y-6">

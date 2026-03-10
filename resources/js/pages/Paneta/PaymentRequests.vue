@@ -75,7 +75,7 @@ const form = useForm({
     linked_account_id: null as number | null,
     description: '',
     allow_partial: false,
-    expires_in_minutes: 60,
+    expires_in_days: 7,
 });
 
 const formatCurrency = (amount: number, currency: string = 'USD') => {
@@ -189,8 +189,8 @@ const simulatePay = (requestId: number) => {
                                 <Input v-model="form.description" placeholder="What's this payment for?" />
                             </div>
                             <div class="space-y-2">
-                                <Label>Expires In (minutes)</Label>
-                                <Input v-model.number="form.expires_in_minutes" type="number" min="5" max="10080" />
+                                <Label>Expires In (days)</Label>
+                                <Input v-model.number="form.expires_in_days" type="number" min="1" max="365" />
                             </div>
                             <div class="flex items-center space-x-2">
                                 <Checkbox id="allow_partial" v-model:checked="form.allow_partial" />

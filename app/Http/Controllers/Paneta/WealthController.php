@@ -114,27 +114,33 @@ class WealthController extends Controller
             [
                 'asset_class' => 'Equities',
                 'holdings' => [
-                    ['symbol' => 'AAPL', 'name' => 'Apple Inc.', 'quantity' => 50, 'current_price' => 178.50, 'market_value' => 8925.00, 'allocation_pct' => 25.5, 'sector' => 'Technology', 'region' => 'North America'],
-                    ['symbol' => 'MSFT', 'name' => 'Microsoft Corp.', 'quantity' => 30, 'current_price' => 378.20, 'market_value' => 11346.00, 'allocation_pct' => 32.4, 'sector' => 'Technology', 'region' => 'North America'],
-                    ['symbol' => 'NPN', 'name' => 'Naspers Ltd.', 'quantity' => 20, 'current_price' => 3250.00, 'market_value' => 3513.51, 'allocation_pct' => 10.0, 'sector' => 'Technology', 'region' => 'Africa'],
+                    ['symbol' => 'AAPL', 'name' => 'Apple Inc.', 'quantity' => 50, 'current_price' => 178.50, 'market_value' => 8925.00, 'allocation_pct' => 18.5, 'sector' => 'Technology', 'financial_market' => 'NYSE', 'region' => 'North America'],
+                    ['symbol' => 'MSFT', 'name' => 'Microsoft Corp.', 'quantity' => 30, 'current_price' => 378.20, 'market_value' => 11346.00, 'allocation_pct' => 23.5, 'sector' => 'Technology', 'financial_market' => 'NASDAQ', 'region' => 'North America'],
+                    ['symbol' => 'NPN', 'name' => 'Naspers Ltd.', 'quantity' => 20, 'current_price' => 3250.00, 'market_value' => 3513.51, 'allocation_pct' => 7.3, 'sector' => 'Technology', 'financial_market' => 'JSE', 'region' => 'Africa'],
+                    ['symbol' => 'OK', 'name' => 'OK Zimbabwe Limited', 'quantity' => 100, 'current_price' => 45.50, 'market_value' => 4550.00, 'allocation_pct' => 9.4, 'sector' => 'Retail', 'financial_market' => 'ZSE', 'region' => 'Africa'],
+                    ['symbol' => 'DELTA', 'name' => 'Delta Corporation', 'quantity' => 50, 'current_price' => 125.00, 'market_value' => 6250.00, 'allocation_pct' => 13.0, 'sector' => 'Beverages', 'financial_market' => 'ZSE', 'region' => 'Africa'],
+                    ['symbol' => 'ECONET', 'name' => 'Econet Wireless Zimbabwe', 'quantity' => 75, 'current_price' => 85.75, 'market_value' => 6431.25, 'allocation_pct' => 13.3, 'sector' => 'Telecommunications', 'financial_market' => 'ZSE', 'region' => 'Africa'],
+                    ['symbol' => 'PADENGA', 'name' => 'Padenga Holdings Limited', 'quantity' => 500, 'current_price' => 0.28, 'market_value' => 140.00, 'allocation_pct' => 0.3, 'sector' => 'Agriculture', 'financial_market' => 'VFEX', 'region' => 'Africa'],
+                    ['symbol' => 'SEEDCO', 'name' => 'SeedCo International', 'quantity' => 200, 'current_price' => 0.65, 'market_value' => 130.00, 'allocation_pct' => 0.3, 'sector' => 'Agriculture', 'financial_market' => 'VFEX', 'region' => 'Africa'],
+                    ['symbol' => 'INNSCOR', 'name' => 'Innscor Africa Limited', 'quantity' => 80, 'current_price' => 95.30, 'market_value' => 7624.00, 'allocation_pct' => 15.8, 'sector' => 'Consumer Goods', 'financial_market' => 'ZSE', 'region' => 'Africa'],
                 ],
             ],
             [
                 'asset_class' => 'ETFs',
                 'holdings' => [
-                    ['symbol' => 'VOO', 'name' => 'Vanguard S&P 500', 'quantity' => 15, 'current_price' => 450.30, 'market_value' => 6754.50, 'allocation_pct' => 19.3, 'sector' => 'Diversified', 'region' => 'Global'],
+                    ['symbol' => 'VOO', 'name' => 'Vanguard S&P 500', 'quantity' => 15, 'current_price' => 450.30, 'market_value' => 6754.50, 'allocation_pct' => 14.0, 'sector' => 'Diversified', 'financial_market' => 'NYSE', 'region' => 'Global'],
                 ],
             ],
             [
                 'asset_class' => 'Bonds',
                 'holdings' => [
-                    ['symbol' => 'BND', 'name' => 'Vanguard Total Bond', 'quantity' => 50, 'current_price' => 72.50, 'market_value' => 3625.00, 'allocation_pct' => 10.4, 'sector' => 'Fixed Income', 'region' => 'North America'],
+                    ['symbol' => 'BND', 'name' => 'Vanguard Total Bond', 'quantity' => 50, 'current_price' => 72.50, 'market_value' => 3625.00, 'allocation_pct' => 7.5, 'sector' => 'Fixed Income', 'financial_market' => 'NASDAQ', 'region' => 'North America'],
                 ],
             ],
             [
                 'asset_class' => 'Crypto',
                 'holdings' => [
-                    ['symbol' => 'BTC', 'name' => 'Bitcoin', 'quantity' => 0.02, 'current_price' => 42500.00, 'market_value' => 850.00, 'allocation_pct' => 2.4, 'sector' => 'Digital Assets', 'region' => 'Global'],
+                    ['symbol' => 'BTC', 'name' => 'Bitcoin', 'quantity' => 0.02, 'current_price' => 42500.00, 'market_value' => 850.00, 'allocation_pct' => 1.8, 'sector' => 'Digital Assets', 'financial_market' => 'Crypto Exchanges', 'region' => 'Global'],
                 ],
             ],
         ];
