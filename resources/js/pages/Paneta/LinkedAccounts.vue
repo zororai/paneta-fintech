@@ -68,14 +68,26 @@ const selectedCategory = ref<string | null>(null);
 const selectedInstitution = ref<number | null>(null);
 const consentGranted = ref(false);
 
-const accountTypes = ['Debit', 'Credit', 'Savings', 'Money Market', 'Investment', 'Business'];
+const accountTypes = [
+    'Current Account',
+    'Saving Account',
+    'Checking Account',
+    'Joint Account',
+    'Business Account',
+    'Student Account',
+    'Wallet',
+    'Credit Card',
+    'Debit Card',
+    'Money Market',
+    'Investment Account'
+];
 
 const form = useForm({
     institution_id: null as number | null,
     country: '',
     account_number: '',
     account_holder_name: '',
-    account_type: 'Debit',
+    account_type: 'Current Account',
     currency: 'USD',
 });
 
@@ -189,6 +201,32 @@ const grantConsent = () => {
 };
 
 const linkAccount = () => {
+    // Validate all required fields
+    if (!form.institution_id) {
+        alert('Please select an institution');
+        return;
+    }
+    if (!form.country) {
+        alert('Please select a country');
+        return;
+    }
+    if (!form.account_number) {
+        alert('Please enter account number');
+        return;
+    }
+    if (!form.account_holder_name) {
+        alert('Please enter account holder name');
+        return;
+    }
+    if (!form.account_type) {
+        alert('Please select account type');
+        return;
+    }
+    if (!form.currency) {
+        alert('Please select currency');
+        return;
+    }
+
     console.log('Submitting form data:', {
         institution_id: form.institution_id,
         country: form.country,
@@ -578,8 +616,9 @@ const viewStatements = (account: LinkedAccount) => {
                             </Button>
                             <Button
                                 v-if="linkingStep === 5"
-                                :disabled="!consentGranted || form.processing"
+                                :disabled="form.processing"
                                 @click="linkAccount"
+                                class="bg-primary hover:bg-primary/90"
                             >
                                 <span v-if="form.processing">Linking...</span>
                                 <span v-else>Complete Linking</span>
@@ -725,6 +764,15 @@ const viewStatements = (account: LinkedAccount) => {
                         <div class="grid grid-cols-3 gap-2 p-3 border rounded-lg">
                             <div class="text-sm text-muted-foreground">Account Number</div>
                             <div class="col-span-2 font-medium font-mono">{{ selectedAccount.account_identifier }}</div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 p-3 border rounded-lg">
+                            <div class="text-sm text-muted-foreground">Account Type</div>
+                            <div class="col-span-2 font-medium">
+                                <Badge variant="outline">
+                                    {{ selectedAccount.account_type || 'N/A' }}
+                                </Badge>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-3 gap-2 p-3 border rounded-lg">

@@ -130,6 +130,13 @@ Route::middleware(['auth', 'verified'])->prefix('paneta')->name('paneta.')->grou
     // Currency Exchange
     Route::get('/currency-exchange', [CurrencyExchangeController::class, 'index'])->name('currency-exchange.index');
     Route::post('/currency-exchange/quote', [CurrencyExchangeController::class, 'getQuote'])->name('currency-exchange.quote');
+    
+    // P2P Exchange
+    Route::post('/p2p-exchange/request', [\App\Http\Controllers\Paneta\P2PExchangeController::class, 'startExchange'])->name('p2p-exchange.request');
+    Route::get('/p2p-exchange/requests', [\App\Http\Controllers\Paneta\P2PExchangeController::class, 'getExchangeRequests'])->name('p2p-exchange.requests');
+    Route::post('/p2p-exchange/{exchangeRequest}/accept', [\App\Http\Controllers\Paneta\P2PExchangeController::class, 'acceptRequest'])->name('p2p-exchange.accept');
+    Route::post('/p2p-exchange/{exchangeRequest}/decline', [\App\Http\Controllers\Paneta\P2PExchangeController::class, 'declineRequest'])->name('p2p-exchange.decline');
+    Route::post('/p2p-exchange/escrow/{escrow}/confirm', [\App\Http\Controllers\Paneta\P2PExchangeController::class, 'confirmTrade'])->name('p2p-exchange.confirm');
 
     // FX Provider (Business Account users only)
     Route::middleware('business')->group(function () {

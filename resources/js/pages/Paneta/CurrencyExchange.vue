@@ -107,6 +107,38 @@ const form = useForm({
     amount: 100,
 });
 
+const liveRatesForm = ref({
+    amount: 100,
+    from_currency: 'USD',
+    to_currency: 'ZWL',
+});
+
+const majorCurrencyPairs = ref([
+    { pair: 'USD/EUR', rate: 0.8534, change: '+0.12%', volume: '$2.4B', trend: 'up' },
+    { pair: 'USD/GBP', rate: 0.7932, change: '-0.08%', volume: '$1.8B', trend: 'down' },
+    { pair: 'USD/ZWL', rate: 25.5123, change: '+2.34%', volume: '$45M', trend: 'up' },
+    { pair: 'EUR/GBP', rate: 0.9295, change: '+0.05%', volume: '$890M', trend: 'up' },
+    { pair: 'USD/JPY', rate: 149.85, change: '+0.45%', volume: '$3.2B', trend: 'up' },
+    { pair: 'USD/AUD', rate: 1.5234, change: '-0.23%', volume: '$1.1B', trend: 'down' },
+    { pair: 'USD/CAD', rate: 1.3456, change: '+0.18%', volume: '$945M', trend: 'up' },
+    { pair: 'USD/CHF', rate: 0.8976, change: '-0.11%', volume: '$758M', trend: 'down' },
+]);
+
+const calculateLiveRate = computed(() => {
+    const pair = majorCurrencyPairs.value.find(p => 
+        p.pair === `${liveRatesForm.value.from_currency}/${liveRatesForm.value.to_currency}`
+    );
+    const rate = pair ? pair.rate : 25.5123;
+    return (liveRatesForm.value.amount * rate).toFixed(2);
+});
+
+const getLiveExchangeRate = computed(() => {
+    const pair = majorCurrencyPairs.value.find(p => 
+        p.pair === `${liveRatesForm.value.from_currency}/${liveRatesForm.value.to_currency}`
+    );
+    return pair ? pair.rate.toFixed(4) : '25.5123';
+});
+
 const selectedAccount = computed(() => {
     return props.linkedAccounts.find((a) => a.id === form.source_account_id);
 });
@@ -692,12 +724,147 @@ const calculateFees = computed(() => {
                 </TabsContent>
 
                 <!-- FX Marketplace Tab -->
-                <TabsContent value="fx-marketplace" class="space-y-4">
-                    <!-- Header matching P2P format -->
-                    <div class="flex items-center justify-between">
+                <TabsContent value="fx-marketplace" class="space-y-6">
+                    <!-- Live Exchange Rates Section -->
+                    <Card class="bg-gradient-to-br from-blue-600 to-purple-700 border-0 shadow-xl">
+                        <CardHeader class="pb-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <TrendingUp class="h-6 w-6 text-white" />
+                                    <CardTitle class="text-white text-2xl">Live Market Dashboard - Global Currency Exchange</CardTitle>
+                                </div>
+                                <Badge variant="secondary" class="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                                    Real-Time
+                                </Badge>
+                            </div>
+                            <CardDescription class="text-white/90 text-sm mt-2">
+                                Real-time monitoring of 170+ global currencies with institutional-grade liquidity and cross-matrix exchange rates
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent class="space-y-6">
+                            <!-- Universal Currency Calculator -->
+                            <Card class="bg-white/95 backdrop-blur-sm shadow-lg">
+                                <CardContent class="p-6">
+                                    <h3 class="text-lg font-semibold mb-4">Universal Currency Calculator</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                                        <!-- Amount Input -->
+                                        <div class="space-y-2">
+                                            <Label for="live-amount" class="text-sm font-medium">Amount</Label>
+                                            <Input 
+                                                id="live-amount"
+                                                type="number" 
+                                                v-model.number="liveRatesForm.amount"
+                                                class="h-12 text-lg font-semibold"
+                                                placeholder="100"
+                                            />
+                                        </div>
+
+                                        <!-- From Currency -->
+                                        <div class="space-y-2">
+                                            <Label for="from-currency" class="text-sm font-medium">From Currency</Label>
+                                            <Select v-model="liveRatesForm.from_currency">
+                                                <SelectTrigger id="from-currency" class="h-12">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="USD">USD - United States Dollar</SelectItem>
+                                                    <SelectItem value="EUR">EUR - Euro</SelectItem>
+                                                    <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                                                    <SelectItem value="ZWL">ZWL - Zimbabwean Dollar</SelectItem>
+                                                    <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
+                                                    <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
+                                                    <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
+                                                    <SelectItem value="CHF">CHF - Swiss Franc</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <!-- To Currency -->
+                                        <div class="space-y-2">
+                                            <Label for="to-currency" class="text-sm font-medium">To Currency</Label>
+                                            <Select v-model="liveRatesForm.to_currency">
+                                                <SelectTrigger id="to-currency" class="h-12">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="ZWL">ZWL - Zimbabwean Dollar</SelectItem>
+                                                    <SelectItem value="USD">USD - United States Dollar</SelectItem>
+                                                    <SelectItem value="EUR">EUR - Euro</SelectItem>
+                                                    <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                                                    <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
+                                                    <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
+                                                    <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
+                                                    <SelectItem value="CHF">CHF - Swiss Franc</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <!-- Calculate Button -->
+                                        <Button class="h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                                            <ArrowRightLeft class="mr-2 h-5 w-5" />
+                                            Calculate Live Rate
+                                        </Button>
+                                    </div>
+
+                                    <!-- Live Exchange Rate Result -->
+                                    <div class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-sm text-muted-foreground mb-1">Live Exchange Rate</p>
+                                                <p class="text-2xl font-bold text-blue-900">
+                                                    1 {{ liveRatesForm.from_currency }} = {{ getLiveExchangeRate }} {{ liveRatesForm.to_currency }}
+                                                </p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-sm text-muted-foreground mb-1">You will receive</p>
+                                                <p class="text-3xl font-bold text-purple-900">
+                                                    {{ calculateLiveRate }} {{ liveRatesForm.to_currency }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <!-- Major Currency Pairs - Live Rates -->
+                            <div>
+                                <h3 class="text-white text-lg font-semibold mb-4">Major Currency Pairs - Live Rates</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <Card 
+                                        v-for="pair in majorCurrencyPairs" 
+                                        :key="pair.pair"
+                                        class="bg-white/95 backdrop-blur-sm hover:shadow-lg transition-all cursor-pointer"
+                                    >
+                                        <CardContent class="p-4">
+                                            <div class="flex items-start justify-between mb-2">
+                                                <h4 class="font-bold text-lg">{{ pair.pair }}</h4>
+                                                <div 
+                                                    class="h-2 w-2 rounded-full"
+                                                    :class="pair.trend === 'up' ? 'bg-green-500' : 'bg-red-500'"
+                                                ></div>
+                                            </div>
+                                            <p class="text-2xl font-bold text-gray-900 mb-1">{{ pair.rate }}</p>
+                                            <div class="flex items-center justify-between text-xs">
+                                                <span 
+                                                    class="font-semibold"
+                                                    :class="pair.trend === 'up' ? 'text-green-600' : 'text-red-600'"
+                                                >
+                                                    {{ pair.change }} 24h
+                                                </span>
+                                                <span class="text-muted-foreground">Volume: {{ pair.volume }}</span>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <!-- FX Providers Section Header -->
+                    <div class="flex items-center justify-between pt-4">
                         <div class="flex items-center gap-3">
                             <Globe class="h-6 w-6 text-primary" />
-                            <h2 class="text-2xl font-bold">FX Marketplace</h2>
+                            <h2 class="text-2xl font-bold">FX Providers</h2>
                             <Badge variant="default" class="bg-green-600">{{ fxProviders?.length || 0 }} Providers</Badge>
                         </div>
                         <Button variant="outline" size="sm">
@@ -768,14 +935,37 @@ const calculateFees = computed(() => {
                                     </div>
 
                                     <!-- Exchange Rate & Actions -->
-                                    <div class="flex flex-col items-end gap-3 min-w-[280px]">
-                                        <!-- Rate Info -->
+                                    <div class="flex flex-col items-end gap-3 min-w-[300px]">
+                                        <!-- Bid/Ask Rates -->
                                         <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-4 w-full border border-purple-100">
-                                            <div class="text-right space-y-1">
-                                                <div class="text-sm text-muted-foreground">Exchange Rate</div>
-                                                <div class="text-2xl font-bold text-purple-900">0.8534</div>
-                                                <div class="text-xs text-purple-700">Processing Fee: 0.15%</div>
-                                                <div class="text-xs text-purple-700">Processing Time: 15 min</div>
+                                            <div class="space-y-3">
+                                                <!-- Buy (Bid) Rate -->
+                                                <div class="flex items-center justify-between pb-3 border-b border-purple-200">
+                                                    <div class="text-left">
+                                                        <div class="text-xs font-semibold text-purple-700 mb-1">Buy (Bid)</div>
+                                                        <div class="text-2xl font-bold text-green-700">0.8512</div>
+                                                    </div>
+                                                    <Badge variant="outline" class="bg-green-50 text-green-700 border-green-300">
+                                                        Lower
+                                                    </Badge>
+                                                </div>
+                                                
+                                                <!-- Sell (Ask) Rate -->
+                                                <div class="flex items-center justify-between">
+                                                    <div class="text-left">
+                                                        <div class="text-xs font-semibold text-purple-700 mb-1">Sell (Ask)</div>
+                                                        <div class="text-2xl font-bold text-red-700">0.8556</div>
+                                                    </div>
+                                                    <Badge variant="outline" class="bg-red-50 text-red-700 border-red-300">
+                                                        Higher
+                                                    </Badge>
+                                                </div>
+                                                
+                                                <!-- Additional Info -->
+                                                <div class="pt-2 border-t border-purple-200 space-y-1">
+                                                    <div class="text-xs text-purple-700">Processing Fee: 0.15%</div>
+                                                    <div class="text-xs text-purple-700">Processing Time: 15 min</div>
+                                                </div>
                                             </div>
                                         </div>
 

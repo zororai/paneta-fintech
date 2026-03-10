@@ -17,6 +17,7 @@ class LinkedAccount extends Model
         'country',
         'account_identifier',
         'account_holder_name',
+        'account_type',
         'currency',
         'mock_balance',
         'consent_token',

@@ -41,6 +41,7 @@ class LinkedAccountController extends Controller
             'country' => ['required', 'string', 'size:2'],
             'account_number' => ['required', 'string', 'min:5', 'max:50'],
             'account_holder_name' => ['required', 'string', 'min:2', 'max:255'],
+            'account_type' => ['required', 'string', 'in:Current Account,Saving Account,Checking Account,Joint Account,Business Account,Student Account,Wallet,Credit Card,Debit Card,Money Market,Investment Account'],
             'currency' => ['required', 'string', 'size:3'],
         ]);
 
@@ -66,7 +67,8 @@ class LinkedAccountController extends Controller
             $validated['currency'],
             $validated['account_number'],
             $validated['account_holder_name'],
-            $validated['country']
+            $validated['country'],
+            $validated['account_type']
         );
 
         $this->auditService->logAccountLinked($user, $account->id, [
@@ -75,6 +77,7 @@ class LinkedAccountController extends Controller
             'country' => $validated['country'],
             'account_holder_name' => $validated['account_holder_name'],
             'account_number' => $validated['account_number'],
+            'account_type' => $validated['account_type'],
             'currency' => $validated['currency'],
         ]);
 

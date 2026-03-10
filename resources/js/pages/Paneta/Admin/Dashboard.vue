@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
+import DashboardHeader from '@/components/DashboardHeader.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -118,6 +119,7 @@ const getStatusColor = (status: string) => {
     <Head title="Admin Dashboard - PANÉTA" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
+        <DashboardHeader />
         <div class="flex h-full flex-1 flex-col gap-6 p-6">
             <!-- Header -->
             <div class="flex items-center justify-between">

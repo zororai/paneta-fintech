@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
+import DashboardHeader from '@/components/DashboardHeader.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -63,6 +64,7 @@ const getStatusBadge = (status: string) => {
 <template>
     <Head title="Service Provider Dashboard - PANÉTA" />
     <AppLayout :breadcrumbs="breadcrumbs">
+        <DashboardHeader />
         <div class="space-y-6">
             <!-- Header -->
             <div class="flex items-center justify-between">

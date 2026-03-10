@@ -14,6 +14,9 @@ export interface LinkedAccount {
     user_id: number;
     institution_id: number;
     account_identifier: string;
+    account_holder_name?: string;
+    account_type?: string;
+    country?: string;
     currency: string;
     mock_balance: number;
     consent_expires_at: string;

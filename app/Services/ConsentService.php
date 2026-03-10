@@ -33,7 +33,8 @@ class ConsentService
         string $currency = 'USD',
         ?string $accountNumber = null,
         ?string $accountHolderName = null,
-        ?string $country = null
+        ?string $country = null,
+        ?string $accountType = null
     ): LinkedAccount {
         // Generate mock consent token
         $consentToken = $this->generateConsentToken();
@@ -50,6 +51,7 @@ class ConsentService
             'country' => $country,
             'account_identifier' => $accountIdentifier,
             'account_holder_name' => $accountHolderName,
+            'account_type' => $accountType,
             'currency' => $currency,
             'mock_balance' => $mockBalance,
             'consent_token' => $consentToken,
