@@ -131,6 +131,10 @@ Route::middleware(['auth', 'verified'])->prefix('paneta')->name('paneta.')->grou
     Route::get('/currency-exchange', [CurrencyExchangeController::class, 'index'])->name('currency-exchange.index');
     Route::post('/currency-exchange/quote', [CurrencyExchangeController::class, 'getQuote'])->name('currency-exchange.quote');
     
+    // Smart Alerts
+    Route::post('/smart-alerts', [\App\Http\Controllers\Paneta\SmartAlertController::class, 'store'])->name('smart-alerts.store');
+    Route::delete('/smart-alerts/{smartAlert}', [\App\Http\Controllers\Paneta\SmartAlertController::class, 'destroy'])->name('smart-alerts.destroy');
+    
     // P2P Exchange
     Route::post('/p2p-exchange/request', [\App\Http\Controllers\Paneta\P2PExchangeController::class, 'startExchange'])->name('p2p-exchange.request');
     Route::get('/p2p-exchange/requests', [\App\Http\Controllers\Paneta\P2PExchangeController::class, 'getExchangeRequests'])->name('p2p-exchange.requests');

@@ -83,6 +83,11 @@ const businessOnlyNavItems: NavItem[] = [
         href: '/paneta/fx-provider',
         icon: Handshake,
     },
+    {
+        title: 'Batch Payment Processing',
+        href: '/paneta/batch-payments',
+        icon: FileText,
+    },
 ];
 
 // Computed nav items based on account type
@@ -92,8 +97,10 @@ const panetaNavItems = computed(() => {
         const items = [...baseNavItems];
         // Insert FX Provider after Currency Exchange (index 4)
         items.splice(5, 0, businessOnlyNavItems[1]);
-        // Insert Merchant SoftPOS before Audit Logs (will be second to last)
-        items.splice(items.length - 1, 0, businessOnlyNavItems[0]);
+        // Insert Batch Payment Processing after Payment Requests
+        items.splice(7, 0, businessOnlyNavItems[2]);
+        // Insert Merchant SoftPOS at the end
+        items.push(businessOnlyNavItems[0]);
         return items;
     }
     return baseNavItems;
