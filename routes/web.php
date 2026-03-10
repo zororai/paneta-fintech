@@ -146,6 +146,10 @@ Route::middleware(['auth', 'verified'])->prefix('paneta')->name('paneta.')->grou
     Route::middleware('business')->group(function () {
         Route::get('/fx-provider', [\App\Http\Controllers\Paneta\FXProviderController::class, 'index'])->name('fx-provider.index');
         Route::post('/fx-provider/register', [\App\Http\Controllers\Paneta\FXProviderController::class, 'register'])->name('fx-provider.register');
+        
+        // Batch Payment Processing
+        Route::get('/batch-payments', [\App\Http\Controllers\Paneta\BatchPaymentController::class, 'index'])->name('batch-payments.index');
+        Route::post('/batch-payments/process', [\App\Http\Controllers\Paneta\BatchPaymentController::class, 'process'])->name('batch-payments.process');
     });
 
     // Wealth Management (Read-Only)
