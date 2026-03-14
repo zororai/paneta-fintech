@@ -26,8 +26,8 @@ class BatchPaymentController extends Controller
         ]);
 
         // TODO: Implement actual file parsing and batch payment processing
-        // For now, return success
+        // For now, return success and redirect to transactions
         
-        return back()->with('success', 'Batch payment processing initiated successfully.');
+        return redirect('/paneta/transactions')->with('success', 'Batch payment processing initiated successfully. Your transactions will appear in the list shortly.');
     }
 }

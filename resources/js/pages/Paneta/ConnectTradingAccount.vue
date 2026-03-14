@@ -323,15 +323,40 @@ const proceedToConsent = () => {
     currentStep.value = 'consent';
 };
 
-const linkAccount = () => {
+const linkAccount = async () => {
     if (!accountDetails.value.consent_agreed) {
         alert('Please agree to the consent form to proceed');
         return;
     }
     
-    // Here you would make an API call to link the account
-    // For now, we'll simulate success
-    currentStep.value = 'success';
+    try {
+        const response = await fetch('/paneta/connect-trading-account/link', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            },
+            body: JSON.stringify({
+                broker_id: selectedBroker.value.id,
+                account_holder_name: accountDetails.value.account_holder_name,
+                trading_account_number: accountDetails.value.trading_account_number,
+                country: selectedCountry.value,
+                asset_type: selectedAssetType.value,
+                market: selectedMarket.value,
+                consent_agreed: accountDetails.value.consent_agreed,
+            }),
+        });
+
+        if (response.ok) {
+            currentStep.value = 'success';
+        } else {
+            const error = await response.json().catch(() => ({}));
+            alert(error.message || 'Error linking account. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error linking account. Please try again.');
+    }
 };
 
 const goBack = () => {

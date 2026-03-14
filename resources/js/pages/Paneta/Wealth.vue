@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -114,7 +114,6 @@ const selectedPeriod = ref('YTD');
 const showBreakdownDialog = ref(false);
 const selectedInstitution = ref<LinkedInstitution | null>(null);
 const refreshing = ref<number | null>(null);
-const showTiersDialog = ref(false);
 const showScenarioDialog = ref(false);
 const activeTab = ref('portfolio');
 const selectedMarketCategory = ref<string | null>(null);
@@ -448,16 +447,17 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                         <Button 
                             variant="outline" 
                             class="gap-2 border-purple-200 bg-purple-50 hover:bg-purple-100"
-                            @click="showTiersDialog = true"
+                            as-child
                         >
-                            <svg class="h-4 w-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                            </svg>
-                            <div class="text-left">
-                                <div class="font-semibold text-purple-900">{{ currentTier.name }}: {{ currentTier.subtitle }}</div>
-                                <div class="text-xs text-purple-600">({{ currentTier.price }})</div>
-                            </div>
+                            <Link href="/paneta/subscription-tiers">
+                                <svg class="h-4 w-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                                Silver Tier: Retail Investors Mode (Free)
+                            </Link>
                         </Button>
+                        <div class="font-semibold text-purple-900">{{ currentTier.name }}: {{ currentTier.subtitle }}</div>
+                        <div class="text-xs text-purple-600">({{ currentTier.price }})</div>
                         <Button 
                             class="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                             @click="activeTab = 'integration'"
@@ -1048,164 +1048,6 @@ const viewBreakdown = (institution: LinkedInstitution) => {
             </DialogContent>
         </Dialog>
 
-                    <!-- Subscription Tiers Dialog -->
-                    <Dialog v-model:open="showTiersDialog">
-                        <DialogContent class="max-w-4xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                                <DialogTitle class="text-2xl">Subscription Tiers</DialogTitle>
-                                <DialogDescription>
-                                    Choose the plan that best fits your investment needs
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4 py-4">
-                                <!-- Silver Tier -->
-                                <Card class="border-2 border-purple-200">
-                                    <CardHeader class="bg-purple-50">
-                                        <CardTitle class="flex items-center gap-2">
-                                            <svg class="h-5 w-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                            </svg>
-                                            Silver Tier
-                                        </CardTitle>
-                                        <div class="text-2xl font-bold">Free</div>
-                                    </CardHeader>
-                                    <CardContent class="pt-4">
-                                        <p class="text-sm text-muted-foreground mb-4">Retail Investors Mode</p>
-                                        <ul class="space-y-2 text-sm">
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                Basic portfolio tracking
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                Up to 5 linked accounts
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                Daily data refresh
-                                            </li>
-                                        </ul>
-                                        <Badge class="mt-4 w-full justify-center bg-purple-100 text-purple-700">Current Plan</Badge>
-                                    </CardContent>
-                                </Card>
-
-                                <!-- Gold Tier -->
-                                <Card class="border-2 border-yellow-400">
-                                    <CardHeader class="bg-yellow-50">
-                                        <CardTitle class="flex items-center gap-2">
-                                            <svg class="h-5 w-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                            </svg>
-                                            Gold Tier
-                                        </CardTitle>
-                                        <div class="text-2xl font-bold">$29/mo</div>
-                                    </CardHeader>
-                                    <CardContent class="pt-4">
-                                        <p class="text-sm text-muted-foreground mb-4">Professional Investors</p>
-                                        <ul class="space-y-2 text-sm">
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                Advanced analytics
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                Unlimited linked accounts
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                Real-time data
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                AI recommendations
-                                            </li>
-                                        </ul>
-                                        <Button class="mt-4 w-full bg-yellow-600 hover:bg-yellow-700">Upgrade</Button>
-                                    </CardContent>
-                                </Card>
-
-                                <!-- Platinum Tier -->
-                                <Card class="border-2 border-slate-400">
-                                    <CardHeader class="bg-gradient-to-br from-slate-50 to-slate-100">
-                                        <CardTitle class="flex items-center gap-2">
-                                            <Sparkles class="h-5 w-5 text-slate-600" />
-                                            Platinum Tier
-                                        </CardTitle>
-                                        <div class="text-2xl font-bold">$149/mo</div>
-                                    </CardHeader>
-                                    <CardContent class="pt-4">
-                                        <p class="text-sm text-muted-foreground mb-4">High Net Worth Investors</p>
-                                        <ul class="space-y-2 text-sm">
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                All Gold features
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                Scenario analysis
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                Custom reports
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                Tax optimization tools
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                Priority support
-                                            </li>
-                                        </ul>
-                                        <Button class="mt-4 w-full bg-slate-600 hover:bg-slate-700">Upgrade</Button>
-                                    </CardContent>
-                                </Card>
-
-                                <!-- Diamond Tier -->
-                                <Card class="border-2 border-cyan-400 shadow-lg">
-                                    <CardHeader class="bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50">
-                                        <CardTitle class="flex items-center gap-2">
-                                            <svg class="h-5 w-5 text-cyan-600" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M10 2l2.5 5.5L18 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-1.5L10 2z"/>
-                                            </svg>
-                                            Diamond Tier
-                                        </CardTitle>
-                                        <div class="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">$299/mo</div>
-                                    </CardHeader>
-                                    <CardContent class="pt-4">
-                                        <p class="text-sm text-muted-foreground mb-4">Institutional & Family Offices</p>
-                                        <ul class="space-y-2 text-sm">
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                All Platinum features
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                Dedicated account manager
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                White-label reporting
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                API access
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                Multi-entity management
-                                            </li>
-                                            <li class="flex items-center gap-2">
-                                                <CheckCircle class="h-4 w-4 text-green-600" />
-                                                24/7 concierge support
-                                            </li>
-                                        </ul>
-                                        <Button class="mt-4 w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700">Upgrade</Button>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
 
                     <!-- Scenario Analysis Dialog -->
                     <Dialog v-model:open="showScenarioDialog">
@@ -1247,8 +1089,10 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                             </div>
                             <DialogFooter>
                                 <Button variant="outline" @click="showScenarioDialog = false">Close</Button>
-                                <Button class="bg-gradient-to-r from-blue-600 to-indigo-600" @click="showTiersDialog = true; showScenarioDialog = false">
-                                    Upgrade to Access
+                                <Button class="bg-gradient-to-r from-blue-600 to-indigo-600" as-child>
+                                    <Link href="/paneta/subscription-tiers">
+                                        Upgrade to Access
+                                    </Link>
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
@@ -1812,41 +1656,6 @@ const viewBreakdown = (institution: LinkedInstitution) => {
                             </div>
                         </div>
                     </div>
-
-                    <!-- Add New Account Section -->
-                    <Card>
-                        <CardHeader>
-                            <CardTitle class="flex items-center gap-2">
-                                <Plus class="h-5 w-5" />
-                                Connect New Trading Account
-                            </CardTitle>
-                            <CardDescription>
-                                Link accounts from brokers, exchanges, and investment platforms worldwide
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div class="grid gap-4 md:grid-cols-3">
-                                <Button variant="outline" class="h-24 flex flex-col gap-2" as-child>
-                                    <a href="/paneta/connect-trading-account/stockbrokers">
-                                        <BarChart3 class="h-6 w-6" />
-                                        <span>Stock Brokers</span>
-                                    </a>
-                                </Button>
-                                <Button variant="outline" class="h-24 flex flex-col gap-2" as-child>
-                                    <a href="/paneta/connect-trading-account/cryptoexchanges">
-                                        <DollarSign class="h-6 w-6" />
-                                        <span>Crypto Exchanges</span>
-                                    </a>
-                                </Button>
-                                <Button variant="outline" class="h-24 flex flex-col gap-2" as-child>
-                                    <a href="/paneta/connect-trading-account/investmentplatforms">
-                                        <Building2 class="h-6 w-6" />
-                                        <span>Investment Platforms</span>
-                                    </a>
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
 
                     <!-- Global Market Data Coverage Footer -->
                     <Card class="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">

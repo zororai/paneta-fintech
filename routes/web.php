@@ -154,11 +154,15 @@ Route::middleware(['auth', 'verified'])->prefix('paneta')->name('paneta.')->grou
 
     // Wealth Management (Read-Only)
     Route::get('/wealth', [WealthController::class, 'index'])->name('wealth.index');
+    Route::get('/subscription-tiers', function () {
+        return Inertia::render('Paneta/SubscriptionTiers');
+    })->name('subscription-tiers');
     
     // Connect Trading Account Flow
     Route::get('/connect-trading-account/{accountType?}', function ($accountType = null) {
         return Inertia::render('Paneta/ConnectTradingAccount', ['accountType' => $accountType]);
     })->name('connect-trading-account');
+    Route::post('/connect-trading-account/link', [\App\Http\Controllers\Paneta\ConnectTradingAccountController::class, 'linkAccount'])->name('connect-trading-account.link');
 
     // Payment Requests
     Route::get('/payment-requests', [PaymentRequestController::class, 'index'])->name('payment-requests.index');

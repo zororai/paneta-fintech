@@ -113,15 +113,44 @@ const parseFile = (file: File) => {
     showSummary.value = true;
 };
 
-const processBatchPayment = () => {
-    uploadForm.post('/paneta/batch-payments/process', {
-        onSuccess: () => {
-            uploadedFile.value = null;
-            parsedPayments.value = [];
-            showSummary.value = false;
-            uploadForm.reset();
-        },
-    });
+const processBatchPayment = async () => {
+    if (!uploadedFile.value) {
+        alert('Please upload a file first');
+        return;
+    }
+
+    try {
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('file', uploadedFile.value);
+        formData.append('processing_mode', uploadForm.processing_mode);
+        formData.append('error_handling', uploadForm.error_handling);
+        formData.append('email_notifications', uploadForm.email_notifications);
+        formData.append('sms_alerts', uploadForm.sms_alerts);
+        formData.append('dashboard_updates', uploadForm.dashboard_updates);
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+        // Use fetch to submit the form with proper file handling
+        const response = await fetch('/paneta/batch-payments/process', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: formData,
+        });
+
+        if (response.ok) {
+            // Redirect to transactions page
+            window.location.href = '/paneta/transactions';
+        } else {
+            const errorData = await response.json().catch(() => ({}));
+            alert(errorData.message || 'Error processing batch payment. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error processing batch payment. Please try again.');
+    }
 };
 
 const downloadTemplate = () => {

@@ -139,13 +139,13 @@ const getStatusColor = (status: string) => {
                         </Button>
                         
                         <!-- Pay -->
-                        <Button variant="outline" @click="router.visit('/paneta/transactions/create')" class="h-24 flex flex-col gap-2 bg-white hover:bg-green-50 border-green-200">
+                        <Button variant="outline" @click="router.visit('/paneta/send-money')" class="h-24 flex flex-col gap-2 bg-white hover:bg-green-50 border-green-200">
                             <QrCode class="h-6 w-6 text-green-600" />
                             <span class="text-xs font-medium">Pay</span>
                         </Button>
                         
                         <!-- Send Money -->
-                        <Button variant="outline" @click="router.visit('/paneta/transactions/create')" class="h-24 flex flex-col gap-2 bg-white hover:bg-purple-50 border-purple-200">
+                        <Button variant="outline" @click="router.visit('/paneta/send-money')" class="h-24 flex flex-col gap-2 bg-white hover:bg-purple-50 border-purple-200">
                             <Send class="h-6 w-6 text-purple-600" />
                             <span class="text-xs font-medium">Send Money</span>
                         </Button>
@@ -192,13 +192,13 @@ const getStatusColor = (status: string) => {
                         </Button>
                         
                         <!-- Pay -->
-                        <Button variant="outline" @click="router.visit('/paneta/transactions/create')" class="h-24 flex flex-col gap-2 bg-white hover:bg-green-50 border-green-200">
+                        <Button variant="outline" @click="router.visit('/paneta/send-money')" class="h-24 flex flex-col gap-2 bg-white hover:bg-green-50 border-green-200">
                             <QrCode class="h-6 w-6 text-green-600" />
                             <span class="text-xs font-medium">Pay</span>
                         </Button>
                         
                         <!-- Send Money -->
-                        <Button variant="outline" @click="router.visit('/paneta/transactions/create')" class="h-24 flex flex-col gap-2 bg-white hover:bg-purple-50 border-purple-200">
+                        <Button variant="outline" @click="router.visit('/paneta/send-money')" class="h-24 flex flex-col gap-2 bg-white hover:bg-purple-50 border-purple-200">
                             <Send class="h-6 w-6 text-purple-600" />
                             <span class="text-xs font-medium">Send Money</span>
                         </Button>
@@ -216,7 +216,7 @@ const getStatusColor = (status: string) => {
                         </Button>
                         
                         <!-- Batch Payment -->
-                        <Button variant="outline" @click="router.visit('/paneta/transactions/create')" class="h-24 flex flex-col gap-2 bg-white hover:bg-cyan-50 border-cyan-200">
+                        <Button variant="outline" @click="router.visit('/paneta/batch-payments')" class="h-24 flex flex-col gap-2 bg-white hover:bg-cyan-50 border-cyan-200">
                             <Users class="h-6 w-6 text-cyan-600" />
                             <span class="text-xs font-medium">Batch Payment</span>
                         </Button>
