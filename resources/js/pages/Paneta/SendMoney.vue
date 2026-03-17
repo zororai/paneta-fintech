@@ -27,7 +27,8 @@ const props = defineProps<{
 
 const activeTab = ref<'manual' | 'scan' | 'link'>('manual');
 const manualPaymentStep = ref(1); // 1: Payment Details, 2: Transaction Summary, 3: Confirmation
-const scanStep = ref<'camera' | 'details'>('camera');
+const scanPaymentStep = ref(1); // 1: Scan QR, 2: Transaction Summary, 3: Confirmation
+const linkPaymentStep = ref(1); // 1: Enter Link, 2: Transaction Summary, 3: Confirmation
 const scannedPaymentRequest = ref<any>(null);
 const selectedSourceAccountForScan = ref<number | null>(null);
 const showCamera = ref(false);
@@ -151,10 +152,50 @@ const prevManualStep = () => {
     }
 };
 
+const nextScanStep = () => {
+    if (scanPaymentStep.value < 3) {
+        scanPaymentStep.value++;
+    }
+};
+
+const prevScanStep = () => {
+    if (scanPaymentStep.value > 1) {
+        scanPaymentStep.value--;
+    }
+};
+
+const nextLinkStep = () => {
+    if (linkPaymentStep.value < 3) {
+        linkPaymentStep.value++;
+    }
+};
+
+const prevLinkStep = () => {
+    if (linkPaymentStep.value > 1) {
+        linkPaymentStep.value--;
+    }
+};
+
 const canProceedToNextStep = computed(() => {
-    switch (manualPaymentStep.value) {
-        case 1: return form.source_account_id && form.amount && form.destination_country && form.destination_institution_id && form.destination_account && isValidAmount.value;
-        case 2: return true;
+    switch (activeTab.value) {
+        case 'manual':
+            switch (manualPaymentStep.value) {
+                case 1: return form.source_account_id && form.amount && form.destination_country && form.destination_institution_id && form.destination_account && isValidAmount.value;
+                case 2: return true;
+                default: return false;
+            }
+        case 'scan':
+            switch (scanPaymentStep.value) {
+                case 1: return scannedPaymentRequest.value && selectedSourceAccountForScan.value;
+                case 2: return true;
+                default: return false;
+            }
+        case 'link':
+            switch (linkPaymentStep.value) {
+                case 1: return linkPaymentRequest.value && selectedSourceAccountForLink.value;
+                case 2: return true;
+                default: return false;
+            }
         default: return false;
     }
 });
@@ -191,7 +232,7 @@ const handleQRCodeScanned = (qrData: string) => {
         // Parse QR code data (assuming JSON format)
         const paymentRequest = JSON.parse(qrData);
         scannedPaymentRequest.value = paymentRequest;
-        scanStep.value = 'details';
+        scanPaymentStep.value = 2; // Move to Transaction Summary
         showCamera.value = false;
     } catch (error) {
         console.error('Invalid QR code data:', error);
@@ -223,7 +264,7 @@ const processScannedPayment = () => {
 };
 
 const resetScanFlow = () => {
-    scanStep.value = 'camera';
+    scanPaymentStep.value = 1;
     scannedPaymentRequest.value = null;
     selectedSourceAccountForScan.value = null;
     showCamera.value = false;
@@ -262,7 +303,7 @@ const processPaymentLink = async () => {
         };
 
         linkPaymentRequest.value = paymentRequest;
-        linkStep.value = 'details';
+        linkPaymentStep.value = 2; // Move to Transaction Summary
     } catch (error) {
         console.error('Error processing payment link:', error);
         alert('Invalid payment link. Please check and try again.');
@@ -293,7 +334,7 @@ const processLinkPayment = () => {
 };
 
 const resetLinkFlow = () => {
-    linkStep.value = 'input';
+    linkPaymentStep.value = 1;
     paymentLink.value = '';
     linkPaymentRequest.value = null;
     selectedSourceAccountForLink.value = null;
@@ -829,94 +870,113 @@ const isValidAmount = computed(() => {
             </div>
 
             <!-- Scan to Pay Tab -->
-            <div v-if="activeTab === 'scan'" class="grid gap-6">
-                <!-- Step 1: Camera Scanner -->
-                <Card v-if="scanStep === 'camera'">
-                    <CardHeader>
-                        <CardTitle>Scan to Pay</CardTitle>
-                        <CardDescription>
-                            Point your camera at a payment QR code
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div class="flex flex-col items-center justify-center py-12 space-y-6">
-                            <div class="rounded-full bg-primary/10 p-6">
-                                <QrCode class="h-16 w-16 text-primary" />
-                            </div>
-                            <div class="text-center space-y-2">
-                                <h3 class="text-lg font-semibold">Scan QR Code</h3>
-                                <p class="text-sm text-muted-foreground max-w-md">
-                                    Point your camera at a payment QR code to automatically extract transaction details
-                                </p>
-                            </div>
-                            <Button @click="openCamera" size="lg" class="mt-4">
-                                <QrCode class="mr-2 h-5 w-5" />
-                                Open Camera
-                            </Button>
-                            
-                            <!-- Demo: Simulate QR Scan for Testing -->
-                            <div class="mt-8 pt-8 border-t w-full">
-                                <p class="text-xs text-muted-foreground text-center mb-4">
-                                    For testing: Simulate a scanned payment request
-                                </p>
-                                <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    @click="handleQRCodeScanned(JSON.stringify({
-                                        payment_request_id: 'PR-' + Date.now(),
-                                        payee_name: 'John Doe',
-                                        payee_account: '1234567890',
-                                        amount: '100.00',
-                                        currency: 'USD',
-                                        description: 'Payment for services',
-                                        destination_country: 'US',
-                                        destination_institution_id: institutions.find(i => i.country === 'US')?.id,
-                                        destination_currency: 'USD',
-                                        expires_at: new Date(Date.now() + 3600000).toISOString()
-                                    }))"
-                                    class="w-full"
-                                >
-                                    Simulate QR Scan (Demo)
-                                </Button>
-                            </div>
+            <div v-if="activeTab === 'scan'" class="space-y-6">
+                <!-- Step Indicator -->
+                <div class="flex items-center justify-between">
+                    <div v-for="step in 3" :key="step" class="flex items-center flex-1">
+                        <div :class="[
+                            'flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold',
+                            scanPaymentStep >= step ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                        ]">
+                            {{ step }}
                         </div>
-                    </CardContent>
-                </Card>
+                        <div v-if="step < 3" :class="[
+                            'h-1 flex-1 mx-2',
+                            scanPaymentStep > step ? 'bg-primary' : 'bg-muted'
+                        ]" />
+                    </div>
+                </div>
 
-                <!-- Step 2: Payment Request Details & Source Account Selection -->
-                <div v-if="scanStep === 'details' && scannedPaymentRequest" class="grid gap-6 lg:grid-cols-2">
-                    <!-- Payment Request Details -->
+                <!-- Step Labels -->
+                <div class="flex justify-between text-sm text-muted-foreground">
+                    <span :class="scanPaymentStep >= 1 ? 'text-foreground font-medium' : ''">Scan QR Code</span>
+                    <span :class="scanPaymentStep >= 2 ? 'text-foreground font-medium' : ''">Transaction Summary</span>
+                    <span :class="scanPaymentStep >= 3 ? 'text-foreground font-medium' : ''">Confirmation</span>
+                </div>
+
+                <!-- Step 1: Scan QR Code -->
+                <div v-if="scanPaymentStep === 1" class="grid gap-6 lg:grid-cols-2">
+                    <!-- QR Scanner -->
                     <Card>
                         <CardHeader>
-                            <CardTitle>Payment Request Details</CardTitle>
+                            <CardTitle>Scan to Pay</CardTitle>
                             <CardDescription>
-                                Review the scanned payment request
+                                Point your camera at a payment QR code
                             </CardDescription>
                         </CardHeader>
-                        <CardContent class="space-y-4">
-                            <div class="rounded-lg bg-muted/50 p-4 space-y-3">
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-muted-foreground">Payee</span>
-                                    <span class="font-medium">{{ scannedPaymentRequest.payee_name }}</span>
+                        <CardContent>
+                            <div class="flex flex-col items-center justify-center py-12 space-y-6">
+                                <div class="rounded-full bg-primary/10 p-6">
+                                    <QrCode class="h-16 w-16 text-primary" />
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-muted-foreground">Account</span>
-                                    <span class="font-mono text-sm">{{ scannedPaymentRequest.payee_account }}</span>
+                                <div class="text-center space-y-2">
+                                    <h3 class="text-lg font-semibold">Scan QR Code</h3>
+                                    <p class="text-sm text-muted-foreground max-w-md">
+                                        Point your camera at a payment QR code to automatically extract transaction details
+                                    </p>
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-muted-foreground">Amount</span>
-                                    <span class="text-xl font-bold text-primary">
-                                        {{ formatCurrency(parseFloat(scannedPaymentRequest.amount), scannedPaymentRequest.currency) }}
-                                    </span>
-                                </div>
-                                <div v-if="scannedPaymentRequest.description" class="pt-3 border-t">
-                                    <p class="text-sm text-muted-foreground mb-1">Description</p>
-                                    <p class="text-sm">{{ scannedPaymentRequest.description }}</p>
+                                <Button @click="openCamera" size="lg" class="mt-4">
+                                    <QrCode class="mr-2 h-5 w-5" />
+                                    Open Camera
+                                </Button>
+                                
+                                <!-- Demo: Simulate QR Scan for Testing -->
+                                <div class="mt-8 pt-8 border-t w-full">
+                                    <p class="text-xs text-muted-foreground text-center mb-4">
+                                        For testing: Simulate a scanned payment request
+                                    </p>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        @click="handleQRCodeScanned(JSON.stringify({
+                                            payment_request_id: 'PR-' + Date.now(),
+                                            payee_name: 'Jane Smith',
+                                            payee_account: '9876543210',
+                                            amount: '500.00',
+                                            currency: 'USD',
+                                            description: 'Cross-border payment for goods',
+                                            destination_country: 'ZA',
+                                            destination_institution_id: institutions.find(i => i.country === 'ZA')?.id || 1,
+                                            destination_currency: 'ZAR',
+                                            destination_institution_name: 'Standard Bank South Africa',
+                                            fx_rate: 18.50,
+                                            fx_provider_fee_percent: 0.5,
+                                            expires_at: new Date(Date.now() + 3600000).toISOString()
+                                        }))"
+                                        class="w-full"
+                                    >
+                                        Simulate QR Scan (Demo)
+                                    </Button>
                                 </div>
                             </div>
+                        </CardContent>
+                    </Card>
 
-                            <!-- Select Source Account -->
-                            <div class="space-y-3 pt-4">
+                    <!-- Select Source Account -->
+                    <Card v-if="scannedPaymentRequest">
+                        <CardHeader>
+                            <CardTitle>Select Source Account</CardTitle>
+                            <CardDescription>
+                                Choose which account to debit for this payment
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="space-y-3">
+                                <!-- Payment Request Summary -->
+                                <div class="rounded-lg bg-muted/50 p-4 space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-muted-foreground">Payee</span>
+                                        <span class="font-medium">{{ scannedPaymentRequest.payee_name }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-muted-foreground">Amount</span>
+                                        <span class="text-xl font-bold text-primary">
+                                            {{ formatCurrency(parseFloat(scannedPaymentRequest.amount), scannedPaymentRequest.currency) }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Account Selection -->
                                 <Label>Select Source Account</Label>
                                 <div class="grid gap-3">
                                     <button
@@ -968,45 +1028,122 @@ const isValidAmount = computed(() => {
                                     Cancel
                                 </Button>
                                 <Button 
-                                    @click="processScannedPayment"
+                                    @click="nextScanStep"
                                     :disabled="!selectedSourceAccountForScan"
                                     class="flex-1"
                                 >
-                                    <Send class="mr-2 h-4 w-4" />
-                                    Process Payment
+                                    Next
+                                    <Send class="ml-2 h-4 w-4" />
                                 </Button>
                             </div>
                         </CardContent>
                     </Card>
+                </div>
 
-                    <!-- Transaction Summary -->
+                <!-- Step 2: Transaction Summary -->
+                <div v-if="scanPaymentStep === 2 && scannedPaymentRequest && selectedSourceAccountForScan" class="space-y-6">
                     <Card>
                         <CardHeader>
                             <CardTitle>Transaction Summary</CardTitle>
+                            <CardDescription>Review your transaction details before confirming</CardDescription>
                         </CardHeader>
-                        <CardContent class="space-y-4">
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground">Payment Method</span>
-                                <Badge variant="outline">QR Code Scan</Badge>
-                            </div>
-                            <div v-if="selectedSourceAccountForScan" class="flex justify-between">
-                                <span class="text-muted-foreground">From</span>
-                                <span class="font-medium">
-                                    {{ accounts.find(a => a.id === selectedSourceAccountForScan)?.institution?.name }}
-                                </span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground">To</span>
-                                <span class="font-medium">{{ scannedPaymentRequest.payee_name }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground">Amount</span>
-                                <span class="text-xl font-bold">
-                                    {{ formatCurrency(parseFloat(scannedPaymentRequest.amount), scannedPaymentRequest.currency) }}
-                                </span>
-                            </div>
-                            <hr />
-                            <div v-if="selectedSourceAccountForScan" class="space-y-2">
+                        <CardContent class="space-y-6">
+                            <div class="space-y-4">
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Payment Method</span>
+                                    <Badge variant="outline">QR Code Scan</Badge>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">From</span>
+                                    <span class="font-medium">
+                                        {{ accounts.find(a => a.id === selectedSourceAccountForScan)?.institution?.name }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Account</span>
+                                    <span class="text-sm font-mono">
+                                        {{ accounts.find(a => a.id === selectedSourceAccountForScan)?.account_identifier }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">To</span>
+                                    <span class="font-medium">{{ scannedPaymentRequest.payee_name }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Destination Account</span>
+                                    <span class="text-sm font-mono">{{ scannedPaymentRequest.payee_account }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Destination Institution</span>
+                                    <span class="font-medium">
+                                        {{ scannedPaymentRequest.destination_institution_name || institutions.find(i => i.id === scannedPaymentRequest.destination_institution_id)?.name || 'N/A' }}
+                                    </span>
+                                </div>
+                                <hr />
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Amount</span>
+                                    <span class="text-xl font-bold">
+                                        {{ formatCurrency(parseFloat(scannedPaymentRequest.amount), scannedPaymentRequest.currency) }}
+                                    </span>
+                                </div>
+                                
+                                <!-- Fee Breakdown -->
+                                <div class="rounded-md bg-orange-50 p-3 dark:bg-orange-950 space-y-2">
+                                    <p class="text-xs font-semibold text-orange-700 dark:text-orange-300">
+                                        Fee Breakdown
+                                    </p>
+                                    
+                                    <!-- PANÉTA Fee -->
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-orange-700 dark:text-orange-300">PANÉTA Fee (0.99%)</span>
+                                        <span class="text-orange-600 dark:text-orange-400">
+                                            {{ formatCurrency(parseFloat(scannedPaymentRequest.amount) * 0.0099, scannedPaymentRequest.currency) }}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- FX Provider Fee (for cross-border) -->
+                                    <div v-if="scannedPaymentRequest.currency !== scannedPaymentRequest.destination_currency" class="flex justify-between text-xs">
+                                        <span class="text-orange-700 dark:text-orange-300">FX Provider Fee ({{ scannedPaymentRequest.fx_provider_fee_percent || 0.5 }}%)</span>
+                                        <span class="text-orange-600 dark:text-orange-400">
+                                            {{ 
+                                                formatCurrency(
+                                                    (parseFloat(scannedPaymentRequest.amount) * (scannedPaymentRequest.fx_rate || 18.5)) * ((scannedPaymentRequest.fx_provider_fee_percent || 0.5) / 100),
+                                                    scannedPaymentRequest.destination_currency
+                                                )
+                                            }}
+                                        </span>
+                                    </div>
+                                    
+                                    <hr class="border-orange-200 dark:border-orange-800" />
+                                    
+                                    <!-- Total Amount to Debit -->
+                                    <div class="flex justify-between text-xs">
+                                        <span class="font-semibold text-orange-800 dark:text-orange-200">Total Amount to Debit</span>
+                                        <span class="font-bold text-orange-800 dark:text-orange-200">
+                                            {{ 
+                                                formatCurrency(
+                                                    parseFloat(scannedPaymentRequest.amount) + (parseFloat(scannedPaymentRequest.amount) * 0.0099),
+                                                    scannedPaymentRequest.currency
+                                                )
+                                            }}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Received Amount (for cross-border) -->
+                                    <div v-if="scannedPaymentRequest.currency !== scannedPaymentRequest.destination_currency" class="flex justify-between text-xs pt-1">
+                                        <span class="font-semibold text-green-700 dark:text-green-300">Received Amount</span>
+                                        <span class="font-bold text-green-700 dark:text-green-300">
+                                            {{ 
+                                                formatCurrency(
+                                                    (parseFloat(scannedPaymentRequest.amount) * (scannedPaymentRequest.fx_rate || 18.5)) - 
+                                                    ((parseFloat(scannedPaymentRequest.amount) * (scannedPaymentRequest.fx_rate || 18.5)) * ((scannedPaymentRequest.fx_provider_fee_percent || 0.5) / 100)),
+                                                    scannedPaymentRequest.destination_currency
+                                                )
+                                            }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <hr />
                                 <div class="flex justify-between">
                                     <span class="text-muted-foreground">Available Balance</span>
                                     <span>
@@ -1022,15 +1159,14 @@ const isValidAmount = computed(() => {
                                     <span class="text-muted-foreground">Remaining Balance</span>
                                     <span
                                         :class="
-                                            (accounts.find(a => a.id === selectedSourceAccountForScan)?.mock_balance || 0) - parseFloat(scannedPaymentRequest.amount) < 0
+                                            (accounts.find(a => a.id === selectedSourceAccountForScan)?.mock_balance || 0) - (parseFloat(scannedPaymentRequest.amount) + (parseFloat(scannedPaymentRequest.amount) * 0.0099)) < 0
                                                 ? 'text-red-500'
                                                 : 'text-green-500'
                                         "
                                     >
                                         {{
                                             formatCurrency(
-                                                (accounts.find(a => a.id === selectedSourceAccountForScan)?.mock_balance || 0) -
-                                                    parseFloat(scannedPaymentRequest.amount),
+                                                (accounts.find(a => a.id === selectedSourceAccountForScan)?.mock_balance || 0) - (parseFloat(scannedPaymentRequest.amount) + (parseFloat(scannedPaymentRequest.amount) * 0.0099)),
                                                 accounts.find(a => a.id === selectedSourceAccountForScan)?.currency || 'USD'
                                             )
                                         }}
@@ -1040,121 +1176,176 @@ const isValidAmount = computed(() => {
                         </CardContent>
                     </Card>
 
-                    <!-- Info Card -->
-                    <Card class="lg:col-span-2 border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+                    <div class="flex gap-3">
+                        <Button variant="outline" class="flex-1" @click="prevScanStep">
+                            Back
+                        </Button>
+                        <Button class="flex-1" @click="nextScanStep">
+                            Confirm & Process
+                            <Send class="ml-2 h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Confirmation -->
+                <div v-if="scanPaymentStep === 3" class="space-y-6">
+                    <Card class="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
                         <CardContent class="pt-6">
-                            <div class="flex gap-3">
-                                <AlertCircle class="h-5 w-5 flex-shrink-0 text-blue-600" />
-                                <div class="text-sm text-blue-700 dark:text-blue-300">
-                                    <p class="font-semibold">Next: Pre-Execution Controls</p>
-                                    <p class="mt-1">
-                                        After clicking "Process Payment", you will be taken to the Pre-Execution Controls stage where compliance checks and validations will be performed before the transaction is executed.
-                                    </p>
+                            <div class="flex items-center gap-4">
+                                <div class="rounded-full bg-green-600 p-3">
+                                    <Send class="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-green-900 dark:text-green-100">Ready to Process</h3>
+                                    <p class="text-sm text-green-700 dark:text-green-300">Click "Process Payment" to complete your transaction</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
+
+                    <div class="flex gap-3">
+                        <Button variant="outline" class="flex-1" @click="prevScanStep">
+                            Back
+                        </Button>
+                        <Button class="flex-1 bg-green-600 hover:bg-green-700" @click="processScannedPayment">
+                            <Send class="mr-2 h-4 w-4" />
+                            Process Payment
+                        </Button>
+                    </div>
                 </div>
             </div>
 
             <!-- Pay via Link Tab -->
-            <div v-if="activeTab === 'link'" class="grid gap-6">
-                <!-- Step 1: Payment Link Input -->
-                <Card v-if="linkStep === 'input'">
-                    <CardHeader>
-                        <CardTitle>Pay via Link</CardTitle>
-                        <CardDescription>
-                            Paste a payment link to proceed
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div class="flex flex-col items-center justify-center py-12 space-y-6">
-                            <div class="rounded-full bg-primary/10 p-6">
-                                <Link2 class="h-16 w-16 text-primary" />
-                            </div>
-                            <div class="text-center space-y-2">
-                                <h3 class="text-lg font-semibold">Payment Link Setup</h3>
-                                <p class="text-sm text-muted-foreground max-w-md">
-                                    Paste a payment link to automatically extract transaction details
-                                </p>
-                            </div>
-                            
-                            <div class="w-full max-w-2xl space-y-4">
-                                <div class="space-y-2">
-                                    <Label for="payment_link">Paste Payment Link</Label>
-                                    <div class="flex gap-2">
-                                        <Input
-                                            id="payment_link"
-                                            v-model="paymentLink"
-                                            type="url"
-                                            placeholder="https://paneta.app/pay/..."
-                                            class="flex-1"
-                                        />
-                                        <Button 
-                                            @click="processPaymentLink"
-                                            :disabled="!paymentLink"
-                                        >
-                                            Parse Link
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Demo: Simulate Payment Link for Testing -->
-                            <div class="mt-8 pt-8 border-t w-full max-w-2xl">
-                                <p class="text-xs text-muted-foreground text-center mb-4">
-                                    For testing: Use a sample payment link
-                                </p>
-                                <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    @click="() => {
-                                        paymentLink = 'https://paneta.app/pay/PR-' + Date.now();
-                                        processPaymentLink();
-                                    }"
-                                    class="w-full"
-                                >
-                                    Use Sample Link (Demo)
-                                </Button>
-                            </div>
+            <div v-if="activeTab === 'link'" class="space-y-6">
+                <!-- Step Indicator -->
+                <div class="flex items-center justify-between">
+                    <div v-for="step in 3" :key="step" class="flex items-center flex-1">
+                        <div :class="[
+                            'flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold',
+                            linkPaymentStep >= step ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                        ]">
+                            {{ step }}
                         </div>
-                    </CardContent>
-                </Card>
+                        <div v-if="step < 3" :class="[
+                            'h-1 flex-1 mx-2',
+                            linkPaymentStep > step ? 'bg-primary' : 'bg-muted'
+                        ]" />
+                    </div>
+                </div>
 
-                <!-- Step 2: Payment Request Details & Source Account Selection -->
-                <div v-if="linkStep === 'details' && linkPaymentRequest" class="grid gap-6 lg:grid-cols-2">
-                    <!-- Payment Request Details -->
+                <!-- Step Labels -->
+                <div class="flex justify-between text-sm text-muted-foreground">
+                    <span :class="linkPaymentStep >= 1 ? 'text-foreground font-medium' : ''">Enter Payment Link</span>
+                    <span :class="linkPaymentStep >= 2 ? 'text-foreground font-medium' : ''">Transaction Summary</span>
+                    <span :class="linkPaymentStep >= 3 ? 'text-foreground font-medium' : ''">Confirmation</span>
+                </div>
+
+                <!-- Step 1: Enter Payment Link -->
+                <div v-if="linkPaymentStep === 1" class="grid gap-6 lg:grid-cols-2">
+                    <!-- Payment Link Input -->
                     <Card>
                         <CardHeader>
-                            <CardTitle>Payment Request Details</CardTitle>
+                            <CardTitle>Pay via Link</CardTitle>
                             <CardDescription>
-                                Review the payment request from link
+                                Paste a payment link to proceed
                             </CardDescription>
                         </CardHeader>
-                        <CardContent class="space-y-4">
-                            <div class="rounded-lg bg-muted/50 p-4 space-y-3">
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-muted-foreground">Payee</span>
-                                    <span class="font-medium">{{ linkPaymentRequest.payee_name }}</span>
+                        <CardContent>
+                            <div class="flex flex-col items-center justify-center py-12 space-y-6">
+                                <div class="rounded-full bg-primary/10 p-6">
+                                    <Link2 class="h-16 w-16 text-primary" />
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-muted-foreground">Account</span>
-                                    <span class="font-mono text-sm">{{ linkPaymentRequest.payee_account }}</span>
+                                <div class="text-center space-y-2">
+                                    <h3 class="text-lg font-semibold">Payment Link Setup</h3>
+                                    <p class="text-sm text-muted-foreground max-w-md">
+                                        Paste a payment link to automatically extract transaction details
+                                    </p>
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-muted-foreground">Amount</span>
-                                    <span class="text-xl font-bold text-primary">
-                                        {{ formatCurrency(parseFloat(linkPaymentRequest.amount), linkPaymentRequest.currency) }}
-                                    </span>
+                                
+                                <div class="w-full space-y-4">
+                                    <div class="space-y-2">
+                                        <Label for="payment_link">Paste Payment Link</Label>
+                                        <div class="flex gap-2">
+                                            <Input
+                                                id="payment_link"
+                                                v-model="paymentLink"
+                                                type="url"
+                                                placeholder="https://paneta.app/pay/..."
+                                                class="flex-1"
+                                            />
+                                            <Button 
+                                                @click="processPaymentLink"
+                                                :disabled="!paymentLink"
+                                            >
+                                                Parse Link
+                                            </Button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div v-if="linkPaymentRequest.description" class="pt-3 border-t">
-                                    <p class="text-sm text-muted-foreground mb-1">Description</p>
-                                    <p class="text-sm">{{ linkPaymentRequest.description }}</p>
+                                
+                                <!-- Demo: Simulate Payment Link for Testing -->
+                                <div class="mt-8 pt-8 border-t w-full">
+                                    <p class="text-xs text-muted-foreground text-center mb-4">
+                                        For testing: Use a sample payment link
+                                    </p>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        @click="() => {
+                                            paymentLink = 'https://paneta.app/pay/PR-' + Date.now();
+                                            // Simulate processing payment link with comprehensive data
+                                            const paymentRequest = {
+                                                payment_request_id: 'PR-' + Date.now(),
+                                                payee_name: 'Michael Johnson',
+                                                payee_account: '5555666677',
+                                                amount: '750.00',
+                                                currency: 'USD',
+                                                description: 'International consulting services',
+                                                destination_country: 'GB',
+                                                destination_institution_id: props.institutions.find(i => i.country === 'GB')?.id || 2,
+                                                destination_currency: 'GBP',
+                                                destination_institution_name: 'HSBC United Kingdom',
+                                                fx_rate: 0.79,
+                                                fx_provider_fee_percent: 0.6,
+                                                expires_at: new Date(Date.now() + 7200000).toISOString()
+                                            };
+                                            linkPaymentRequest.value = paymentRequest;
+                                            linkPaymentStep.value = 2;
+                                        }"
+                                        class="w-full"
+                                    >
+                                        Use Sample Link (Demo)
+                                    </Button>
                                 </div>
                             </div>
+                        </CardContent>
+                    </Card>
 
-                            <!-- Select Source Account -->
-                            <div class="space-y-3 pt-4">
+                    <!-- Select Source Account -->
+                    <Card v-if="linkPaymentRequest">
+                        <CardHeader>
+                            <CardTitle>Select Source Account</CardTitle>
+                            <CardDescription>
+                                Choose which account to debit for this payment
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="space-y-3">
+                                <!-- Payment Request Summary -->
+                                <div class="rounded-lg bg-muted/50 p-4 space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-muted-foreground">Payee</span>
+                                        <span class="font-medium">{{ linkPaymentRequest.payee_name }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-sm text-muted-foreground">Amount</span>
+                                        <span class="text-xl font-bold text-primary">
+                                            {{ formatCurrency(parseFloat(linkPaymentRequest.amount), linkPaymentRequest.currency) }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Account Selection -->
                                 <Label>Select Source Account</Label>
                                 <div class="grid gap-3">
                                     <button
@@ -1206,45 +1397,122 @@ const isValidAmount = computed(() => {
                                     Cancel
                                 </Button>
                                 <Button 
-                                    @click="processLinkPayment"
+                                    @click="nextLinkStep"
                                     :disabled="!selectedSourceAccountForLink"
                                     class="flex-1"
                                 >
-                                    <Send class="mr-2 h-4 w-4" />
-                                    Process Payment
+                                    Next
+                                    <Send class="ml-2 h-4 w-4" />
                                 </Button>
                             </div>
                         </CardContent>
                     </Card>
+                </div>
 
-                    <!-- Transaction Summary -->
+                <!-- Step 2: Transaction Summary -->
+                <div v-if="linkPaymentStep === 2 && linkPaymentRequest && selectedSourceAccountForLink" class="space-y-6">
                     <Card>
                         <CardHeader>
                             <CardTitle>Transaction Summary</CardTitle>
+                            <CardDescription>Review your transaction details before confirming</CardDescription>
                         </CardHeader>
-                        <CardContent class="space-y-4">
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground">Payment Method</span>
-                                <Badge variant="outline">Payment Link</Badge>
-                            </div>
-                            <div v-if="selectedSourceAccountForLink" class="flex justify-between">
-                                <span class="text-muted-foreground">From</span>
-                                <span class="font-medium">
-                                    {{ accounts.find(a => a.id === selectedSourceAccountForLink)?.institution?.name }}
-                                </span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground">To</span>
-                                <span class="font-medium">{{ linkPaymentRequest.payee_name }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-muted-foreground">Amount</span>
-                                <span class="text-xl font-bold">
-                                    {{ formatCurrency(parseFloat(linkPaymentRequest.amount), linkPaymentRequest.currency) }}
-                                </span>
-                            </div>
-                            <hr />
-                            <div v-if="selectedSourceAccountForLink" class="space-y-2">
+                        <CardContent class="space-y-6">
+                            <div class="space-y-4">
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Payment Method</span>
+                                    <Badge variant="outline">Payment Link</Badge>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">From</span>
+                                    <span class="font-medium">
+                                        {{ accounts.find(a => a.id === selectedSourceAccountForLink)?.institution?.name }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Account</span>
+                                    <span class="text-sm font-mono">
+                                        {{ accounts.find(a => a.id === selectedSourceAccountForLink)?.account_identifier }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">To</span>
+                                    <span class="font-medium">{{ linkPaymentRequest.payee_name }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Destination Account</span>
+                                    <span class="text-sm font-mono">{{ linkPaymentRequest.payee_account }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Destination Institution</span>
+                                    <span class="font-medium">
+                                        {{ linkPaymentRequest.destination_institution_name || institutions.find(i => i.id === linkPaymentRequest.destination_institution_id)?.name || 'N/A' }}
+                                    </span>
+                                </div>
+                                <hr />
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">Amount</span>
+                                    <span class="text-xl font-bold">
+                                        {{ formatCurrency(parseFloat(linkPaymentRequest.amount), linkPaymentRequest.currency) }}
+                                    </span>
+                                </div>
+                                
+                                <!-- Fee Breakdown -->
+                                <div class="rounded-md bg-orange-50 p-3 dark:bg-orange-950 space-y-2">
+                                    <p class="text-xs font-semibold text-orange-700 dark:text-orange-300">
+                                        Fee Breakdown
+                                    </p>
+                                    
+                                    <!-- PANÉTA Fee -->
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-orange-700 dark:text-orange-300">PANÉTA Fee (0.99%)</span>
+                                        <span class="text-orange-600 dark:text-orange-400">
+                                            {{ formatCurrency(parseFloat(linkPaymentRequest.amount) * 0.0099, linkPaymentRequest.currency) }}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- FX Provider Fee (for cross-border) -->
+                                    <div v-if="linkPaymentRequest.currency !== linkPaymentRequest.destination_currency" class="flex justify-between text-xs">
+                                        <span class="text-orange-700 dark:text-orange-300">FX Provider Fee ({{ linkPaymentRequest.fx_provider_fee_percent || 0.5 }}%)</span>
+                                        <span class="text-orange-600 dark:text-orange-400">
+                                            {{ 
+                                                formatCurrency(
+                                                    (parseFloat(linkPaymentRequest.amount) * (linkPaymentRequest.fx_rate || 0.79)) * ((linkPaymentRequest.fx_provider_fee_percent || 0.6) / 100),
+                                                    linkPaymentRequest.destination_currency
+                                                )
+                                            }}
+                                        </span>
+                                    </div>
+                                    
+                                    <hr class="border-orange-200 dark:border-orange-800" />
+                                    
+                                    <!-- Total Amount to Debit -->
+                                    <div class="flex justify-between text-xs">
+                                        <span class="font-semibold text-orange-800 dark:text-orange-200">Total Amount to Debit</span>
+                                        <span class="font-bold text-orange-800 dark:text-orange-200">
+                                            {{ 
+                                                formatCurrency(
+                                                    parseFloat(linkPaymentRequest.amount) + (parseFloat(linkPaymentRequest.amount) * 0.0099),
+                                                    linkPaymentRequest.currency
+                                                )
+                                            }}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Received Amount (for cross-border) -->
+                                    <div v-if="linkPaymentRequest.currency !== linkPaymentRequest.destination_currency" class="flex justify-between text-xs pt-1">
+                                        <span class="font-semibold text-green-700 dark:text-green-300">Received Amount</span>
+                                        <span class="font-bold text-green-700 dark:text-green-300">
+                                            {{ 
+                                                formatCurrency(
+                                                    (parseFloat(linkPaymentRequest.amount) * (linkPaymentRequest.fx_rate || 0.79)) - 
+                                                    ((parseFloat(linkPaymentRequest.amount) * (linkPaymentRequest.fx_rate || 0.79)) * ((linkPaymentRequest.fx_provider_fee_percent || 0.6) / 100)),
+                                                    linkPaymentRequest.destination_currency
+                                                )
+                                            }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <hr />
                                 <div class="flex justify-between">
                                     <span class="text-muted-foreground">Available Balance</span>
                                     <span>
@@ -1260,15 +1528,14 @@ const isValidAmount = computed(() => {
                                     <span class="text-muted-foreground">Remaining Balance</span>
                                     <span
                                         :class="
-                                            (accounts.find(a => a.id === selectedSourceAccountForLink)?.mock_balance || 0) - parseFloat(linkPaymentRequest.amount) < 0
+                                            (accounts.find(a => a.id === selectedSourceAccountForLink)?.mock_balance || 0) - (parseFloat(linkPaymentRequest.amount) + (parseFloat(linkPaymentRequest.amount) * 0.0099)) < 0
                                                 ? 'text-red-500'
                                                 : 'text-green-500'
                                         "
                                     >
                                         {{
                                             formatCurrency(
-                                                (accounts.find(a => a.id === selectedSourceAccountForLink)?.mock_balance || 0) -
-                                                    parseFloat(linkPaymentRequest.amount),
+                                                (accounts.find(a => a.id === selectedSourceAccountForLink)?.mock_balance || 0) - (parseFloat(linkPaymentRequest.amount) + (parseFloat(linkPaymentRequest.amount) * 0.0099)),
                                                 accounts.find(a => a.id === selectedSourceAccountForLink)?.currency || 'USD'
                                             )
                                         }}
@@ -1278,20 +1545,42 @@ const isValidAmount = computed(() => {
                         </CardContent>
                     </Card>
 
-                    <!-- Info Card -->
-                    <Card class="lg:col-span-2 border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+                    <div class="flex gap-3">
+                        <Button variant="outline" class="flex-1" @click="prevLinkStep">
+                            Back
+                        </Button>
+                        <Button class="flex-1" @click="nextLinkStep">
+                            Confirm & Process
+                            <Send class="ml-2 h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Confirmation -->
+                <div v-if="linkPaymentStep === 3" class="space-y-6">
+                    <Card class="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
                         <CardContent class="pt-6">
-                            <div class="flex gap-3">
-                                <AlertCircle class="h-5 w-5 flex-shrink-0 text-blue-600" />
-                                <div class="text-sm text-blue-700 dark:text-blue-300">
-                                    <p class="font-semibold">Next: Pre-Execution Controls</p>
-                                    <p class="mt-1">
-                                        After clicking "Process Payment", you will be taken to the Pre-Execution Controls stage where compliance checks and validations will be performed before the transaction is executed.
-                                    </p>
+                            <div class="flex items-center gap-4">
+                                <div class="rounded-full bg-green-600 p-3">
+                                    <Send class="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-green-900 dark:text-green-100">Ready to Process</h3>
+                                    <p class="text-sm text-green-700 dark:text-green-300">Click "Process Payment" to complete your transaction</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
+
+                    <div class="flex gap-3">
+                        <Button variant="outline" class="flex-1" @click="prevLinkStep">
+                            Back
+                        </Button>
+                        <Button class="flex-1 bg-green-600 hover:bg-green-700" @click="processLinkPayment">
+                            <Send class="mr-2 h-4 w-4" />
+                            Process Payment
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>
