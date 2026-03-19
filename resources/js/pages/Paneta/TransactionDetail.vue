@@ -244,21 +244,6 @@ const getStepStatus = (stepStatus: string) => {
                                 </span>
                             </div>
 
-                            <div>
-                                <p class="mb-2 text-sm font-medium">Signed Hash</p>
-                                <code
-                                    class="block rounded bg-muted p-3 font-mono text-xs break-all"
-                                >
-                                    {{ transaction.payment_instruction.signed_hash }}
-                                </code>
-                            </div>
-
-                            <div>
-                                <p class="mb-2 text-sm font-medium">Instruction Payload</p>
-                                <pre
-                                    class="rounded bg-muted p-4 text-xs overflow-auto"
-                                >{{ JSON.stringify(transaction.payment_instruction.instruction_payload, null, 2) }}</pre>
-                            </div>
                         </div>
                     </CardContent>
                 </Card>

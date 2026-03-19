@@ -210,15 +210,11 @@ const submit = () => {
     // Submit the transaction
     form.post('/paneta/transactions', {
         onSuccess: () => {
-            console.log('Transaction submitted successfully');
-            alert('Transaction processed successfully! You will be redirected to Pre-Execution Controls.');
-            // Reset form and stepper
             manualPaymentStep.value = 1;
             form.reset();
         },
         onError: (errors) => {
             console.error('Transaction submission errors:', errors);
-            alert('Error processing transaction. Please try again.');
         },
     });
 };
@@ -853,6 +849,15 @@ const isValidAmount = computed(() => {
                             </div>
                         </CardContent>
                     </Card>
+
+                    <!-- Error display -->
+                    <div v-if="form.errors.amount" class="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
+                        <AlertCircle class="h-5 w-5 flex-shrink-0 text-red-600" />
+                        <div class="text-sm text-red-700 dark:text-red-300">
+                            <p class="font-semibold">Payment Failed</p>
+                            <p class="mt-1">{{ form.errors.amount }}</p>
+                        </div>
+                    </div>
 
                     <div class="flex gap-3">
                         <Button variant="outline" class="flex-1" @click="prevManualStep">
