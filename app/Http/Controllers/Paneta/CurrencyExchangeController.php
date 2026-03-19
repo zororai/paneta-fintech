@@ -7,6 +7,8 @@ use App\Models\Institution;
 use App\Models\LinkedAccount;
 use App\Models\FxQuote;
 use App\Models\FxOffer;
+use App\Models\P2PExchangeRequest;
+use App\Models\EscrowTransaction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -66,13 +68,79 @@ class CurrencyExchangeController extends Controller
             ->values()
             ->toArray();
 
+        // Exchange requests where current user is the offer initiator, waiting for review
+        $pendingRequests = P2PExchangeRequest::with([
+            'counterparty',
+            'counterpartySourceAccount.institution',
+            'counterpartyDestinationAccount.institution',
+            'offer',
+        ])
+        ->where('initiator_user_id', $user->id)
+        ->where('status', 'pending')
+        ->latest()
+        ->get()
+        ->map(fn ($req) => [
+            'id'                  => $req->id,
+            'offer_id'            => $req->offer_id,
+            'counterparty_name'   => $req->counterparty->name,
+            'counterparty_id'     => $req->counterparty_id_number,
+            'sell_currency'       => $req->sell_currency,
+            'sell_amount'         => (float) $req->sell_amount,
+            'buy_currency'        => $req->buy_currency,
+            'buy_amount'          => (float) $req->buy_amount,
+            'exchange_rate'       => (float) $req->exchange_rate,
+            'cp_source_account'   => $req->counterpartySourceAccount ? [
+                'id'          => $req->counterpartySourceAccount->id,
+                'institution' => $req->counterpartySourceAccount->institution->name ?? 'Unknown',
+                'identifier'  => $req->counterpartySourceAccount->account_identifier,
+            ] : null,
+            'cp_dest_account' => $req->counterpartyDestinationAccount ? [
+                'id'          => $req->counterpartyDestinationAccount->id,
+                'institution' => $req->counterpartyDestinationAccount->institution->name ?? 'Unknown',
+                'identifier'  => $req->counterpartyDestinationAccount->account_identifier,
+            ] : null,
+            'created_at' => $req->created_at->toISOString(),
+            'expires_at' => $req->expires_at ? $req->expires_at->toISOString() : null,
+        ]);
+
+        // Escrow transactions awaiting PIN confirmation from current user
+        $escrowsAwaiting = EscrowTransaction::where(function ($q) use ($user) {
+                $q->where('initiator_user_id', $user->id)
+                  ->orWhere('counterparty_user_id', $user->id);
+            })
+            ->where('status', 'awaiting_confirmation')
+            ->latest()
+            ->get()
+            ->map(function ($escrow) use ($user) {
+                $isInitiator    = $escrow->initiator_user_id === $user->id;
+                $amount         = $isInitiator ? $escrow->initiator_amount   : $escrow->counterparty_amount;
+                $currency       = $isInitiator ? $escrow->initiator_currency : $escrow->counterparty_currency;
+                $fee            = $isInitiator ? $escrow->initiator_fee      : $escrow->counterparty_fee;
+                $total          = $isInitiator ? $escrow->initiator_total    : $escrow->counterparty_total;
+                $alreadyConfirmed = $isInitiator ? $escrow->initiator_confirmed : $escrow->counterparty_confirmed;
+
+                return [
+                    'id'               => $escrow->id,
+                    'amount'           => (float) $amount,
+                    'currency'         => $currency,
+                    'fee'              => (float) $fee,
+                    'total'            => (float) $total,
+                    'exchange_rate'    => (float) $escrow->exchange_rate,
+                    'is_initiator'     => $isInitiator,
+                    'already_confirmed' => (bool) $alreadyConfirmed,
+                    'expires_at'       => $escrow->expires_at ? $escrow->expires_at->toISOString() : null,
+                ];
+            });
+
         return Inertia::render('Paneta/CurrencyExchange', [
-            'linkedAccounts' => $linkedAccounts,
-            'fxProviders' => $fxProviders,
-            'recentQuotes' => $recentQuotes,
-            'currencies' => $currencies,
-            'panetaFeePercent' => 0.99,
-            'p2pOffers' => $p2pOffers,
+            'linkedAccounts'    => $linkedAccounts,
+            'fxProviders'       => $fxProviders,
+            'recentQuotes'      => $recentQuotes,
+            'currencies'        => $currencies,
+            'panetaFeePercent'  => 0.99,
+            'p2pOffers'         => $p2pOffers,
+            'pendingRequests'   => $pendingRequests,
+            'escrowsAwaiting'   => $escrowsAwaiting,
         ]);
     }
 

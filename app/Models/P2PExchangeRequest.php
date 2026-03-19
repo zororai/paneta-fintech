@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class P2PExchangeRequest extends Model
 {
+    protected $table = 'p2p_exchange_requests';
+
     protected $fillable = [
         'offer_id',
         'counterparty_user_id',

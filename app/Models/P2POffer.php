@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class P2POffer extends Model
 {
+    protected $table = 'p2p_offers';
     protected $fillable = [
         'user_id',
         'source_account_id',

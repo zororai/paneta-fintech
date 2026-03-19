@@ -192,6 +192,59 @@ const generateQrCode = async () => {
 };
 
 const activeDevices = computed(() => props.devices.filter(d => d.status === 'active'));
+
+// ── Active Settlement Account ──────────────────────────────────────────────────
+const activeSettlementAccountId = ref<string>(
+    props.merchants[0]?.settlement_account_id?.toString() ?? ''
+);
+
+const allSettlementAccounts = computed(() => {
+    const merchant = props.merchants[0];
+    if (!merchant) return [];
+    const ids: number[] = [];
+    if (merchant.settlement_account_id) ids.push(merchant.settlement_account_id);
+    if (merchant.other_settlement_accounts) {
+        merchant.other_settlement_accounts.forEach(id => {
+            if (!ids.includes(id)) ids.push(id);
+        });
+    }
+    return ids
+        .map(id => props.linkedAccounts.find(a => a.id === id))
+        .filter((a): a is LinkedAccount => !!a);
+});
+
+const activeAccount = computed(() =>
+    props.linkedAccounts.find(a => a.id.toString() === activeSettlementAccountId.value) ?? null
+);
+
+const activeCurrency = computed(() =>
+    activeAccount.value?.currency ?? props.merchants[0]?.default_currency ?? 'USD'
+);
+
+const activeCurrencyName = computed(() => (({
+    USD: 'US Dollar', ZAR: 'South African Rand', GBP: 'British Pound',
+    EUR: 'Euro', KES: 'Kenyan Shilling', NGN: 'Nigerian Naira', GHS: 'Ghanaian Cedi',
+}) as Record<string, string>)[activeCurrency.value] ?? activeCurrency.value);
+
+const activeCurrencySymbol = computed(() => {
+    try {
+        return new Intl.NumberFormat('en', { style: 'currency', currency: activeCurrency.value })
+            .formatToParts(0)
+            .find(p => p.type === 'currency')?.value ?? activeCurrency.value;
+    } catch {
+        return activeCurrency.value;
+    }
+});
+
+const changeSettlementAccount = (accountId: string) => {
+    activeSettlementAccountId.value = accountId;
+    if (!props.merchants[0]) return;
+    router.post(
+        `/paneta/merchant/${props.merchants[0].id}/settlement`,
+        { linked_account_id: parseInt(accountId) },
+        { preserveState: true, preserveScroll: true }
+    );
+};
 </script>
 
 <template>
@@ -639,6 +692,79 @@ const activeDevices = computed(() => props.devices.filter(d => d.status === 'act
                             </div>
                         </div>
 
+                        <!-- Merchant Account & Currency -->
+                        <Card>
+                            <CardHeader>
+                                <CardTitle class="flex items-center gap-2">
+                                    <Building2 class="h-5 w-5" />
+                                    Merchant Account
+                                </CardTitle>
+                                <CardDescription>
+                                    Payments will be settled into the selected account. Switch accounts to accept into a different wallet.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent class="space-y-4">
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <!-- Settlement Account Selector -->
+                                    <div class="space-y-2">
+                                        <Label>Primary Settlement Account</Label>
+                                        <Select :model-value="activeSettlementAccountId" @update:model-value="changeSettlementAccount">
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select settlement account" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem
+                                                    v-for="acc in allSettlementAccounts"
+                                                    :key="acc.id"
+                                                    :value="acc.id.toString()"
+                                                >
+                                                    {{ acc.institution?.name }} — {{ acc.account_identifier }} ({{ acc.currency }})
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <p v-if="allSettlementAccounts.length === 0" class="text-xs text-muted-foreground">
+                                            No settlement accounts found. Add accounts in the Register tab.
+                                        </p>
+                                    </div>
+                                    <!-- Currency Display -->
+                                    <div class="space-y-2">
+                                        <Label>Settlement Currency</Label>
+                                        <div class="flex h-10 items-center gap-2 rounded-md border bg-muted px-3">
+                                            <span class="text-lg font-bold text-primary">{{ activeCurrency }}</span>
+                                            <span class="text-sm text-muted-foreground">{{ activeCurrencyName }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Quick-switch buttons (only when multiple accounts registered) -->
+                                <div v-if="allSettlementAccounts.length > 1" class="space-y-2">
+                                    <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Switch Account</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        <button
+                                            v-for="acc in allSettlementAccounts"
+                                            :key="acc.id"
+                                            type="button"
+                                            @click="changeSettlementAccount(acc.id.toString())"
+                                            :class="[
+                                                'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
+                                                activeSettlementAccountId === acc.id.toString()
+                                                    ? 'border-primary bg-primary/10 text-primary font-medium'
+                                                    : 'border-border hover:border-primary/50 hover:bg-muted/50',
+                                            ]"
+                                        >
+                                            <CreditCard class="h-3.5 w-3.5" />
+                                            <span>{{ acc.institution?.name }}</span>
+                                            <span class="text-xs opacity-70">({{ acc.currency }})</span>
+                                            <Badge
+                                                v-if="activeSettlementAccountId === acc.id.toString()"
+                                                class="ml-1 px-1 py-0 text-xs bg-primary text-primary-foreground"
+                                            >Active</Badge>
+                                        </button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
                         <!-- Payment Interface -->
                         <div class="grid gap-6 lg:grid-cols-2">
                             <!-- Enter Payment Amount -->
@@ -658,26 +784,14 @@ const activeDevices = computed(() => props.devices.filter(d => d.status === 'act
                                         />
                                     </div>
                                     <div class="grid grid-cols-3 gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            @click="qrForm.amount = 10"
-                                        >
-                                            $10
+                                        <Button type="button" variant="outline" @click="qrForm.amount = 10">
+                                            {{ activeCurrencySymbol }}10
                                         </Button>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            @click="qrForm.amount = 25"
-                                        >
-                                            $25
+                                        <Button type="button" variant="outline" @click="qrForm.amount = 25">
+                                            {{ activeCurrencySymbol }}25
                                         </Button>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            @click="qrForm.amount = 50"
-                                        >
-                                            $50
+                                        <Button type="button" variant="outline" @click="qrForm.amount = 50">
+                                            {{ activeCurrencySymbol }}50
                                         </Button>
                                     </div>
                                 </CardContent>
@@ -727,7 +841,7 @@ const activeDevices = computed(() => props.devices.filter(d => d.status === 'act
                                         </div>
                                     </div>
                                     <h3 class="text-lg font-semibold text-green-700 dark:text-green-400 mb-2">Payment QR Code Generated</h3>
-                                    <p class="text-muted-foreground mb-2">Customer can scan to pay ${{ qrForm.amount }}</p>
+                                    <p class="text-muted-foreground mb-2">Customer can scan to pay {{ formatCurrency(qrForm.amount, activeCurrency) }}</p>
                                     <div class="flex gap-2 mt-4">
                                         <Button variant="outline" size="sm">
                                             Download

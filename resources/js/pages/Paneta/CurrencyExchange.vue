@@ -23,7 +23,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import type { BreadcrumbItem, LinkedAccount, Institution } from '@/types';
-import { ArrowRightLeft, TrendingUp, Clock, DollarSign, RefreshCw, Plus, Users, Globe, Bell } from 'lucide-vue-next';
+import { ArrowRightLeft, TrendingUp, Clock, DollarSign, RefreshCw, Plus, Users, Globe, Bell, ShieldCheck, AlertTriangle, CheckCircle, XCircle, Lock } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 
 interface FxQuote {
@@ -56,6 +56,34 @@ interface P2POffer {
     status: string;
 }
 
+interface PendingRequest {
+    id: number;
+    offer_id: number;
+    counterparty_name: string;
+    counterparty_id: string;
+    sell_currency: string;
+    sell_amount: number;
+    buy_currency: string;
+    buy_amount: number;
+    exchange_rate: number;
+    cp_source_account: { id: number; institution: string; identifier: string } | null;
+    cp_dest_account: { id: number; institution: string; identifier: string } | null;
+    created_at: string;
+    expires_at: string | null;
+}
+
+interface EscrowAwaiting {
+    id: number;
+    amount: number;
+    currency: string;
+    fee: number;
+    total: number;
+    exchange_rate: number;
+    is_initiator: boolean;
+    already_confirmed: boolean;
+    expires_at: string | null;
+}
+
 const props = defineProps<{
     linkedAccounts: LinkedAccount[];
     fxProviders: Institution[];
@@ -63,6 +91,8 @@ const props = defineProps<{
     currencies: string[];
     panetaFeePercent: number;
     p2pOffers?: P2POffer[];
+    pendingRequests?: PendingRequest[];
+    escrowsAwaiting?: EscrowAwaiting[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -259,6 +289,83 @@ const closeNegotiateDialog = () => {
     newMessage.value = '';
 };
 
+// ── Stage 1: Counterparty starts exchange ─────────────────────────────────────
+const showStartExchangeDialog = ref(false);
+const startExchangeOffer = ref<P2POffer | null>(null);
+const startExchangeForm = useForm({
+    offer_id: null as number | null,
+    source_account_id: null as number | null,
+    destination_account_id: null as number | null,
+    sell_amount: 0,
+});
+
+const receiveAmount = computed(() => {
+    if (!startExchangeOffer.value || !startExchangeForm.sell_amount) return '0.00';
+    return (startExchangeForm.sell_amount * startExchangeOffer.value.rate).toFixed(2);
+});
+
+const openStartExchangeDialog = (offer: P2POffer) => {
+    startExchangeOffer.value = offer;
+    startExchangeForm.offer_id = offer.id;
+    startExchangeForm.sell_amount = offer.min_amount;
+    startExchangeForm.source_account_id = null;
+    startExchangeForm.destination_account_id = null;
+    showStartExchangeDialog.value = true;
+};
+
+const submitExchangeRequest = () => {
+    startExchangeForm.post('/paneta/p2p-exchange/request', {
+        onSuccess: () => {
+            showStartExchangeDialog.value = false;
+            startExchangeForm.reset();
+        },
+    });
+};
+
+// ── Stage 2: Initiator reviews incoming request ───────────────────────────────
+const showInitiatorReviewDialog = ref(false);
+const selectedRequest = ref<PendingRequest | null>(null);
+
+const openRequestReview = (req: PendingRequest) => {
+    selectedRequest.value = req;
+    showInitiatorReviewDialog.value = true;
+};
+
+const acceptExchangeRequest = () => {
+    if (!selectedRequest.value) return;
+    router.post(`/paneta/p2p-exchange/${selectedRequest.value.id}/accept`, {}, {
+        onSuccess: () => { showInitiatorReviewDialog.value = false; },
+    });
+};
+
+const declineExchangeRequest = () => {
+    if (!selectedRequest.value) return;
+    router.post(`/paneta/p2p-exchange/${selectedRequest.value.id}/decline`, {}, {
+        onSuccess: () => { showInitiatorReviewDialog.value = false; },
+    });
+};
+
+// ── Stage 3: Trade Summary + PIN confirmation ─────────────────────────────────
+const showTradeSummaryDialog = ref(false);
+const selectedEscrow = ref<EscrowAwaiting | null>(null);
+const tradePinForm = useForm({ pin: '' });
+
+const openTradeSummary = (escrow: EscrowAwaiting) => {
+    selectedEscrow.value = escrow;
+    tradePinForm.pin = '';
+    showTradeSummaryDialog.value = true;
+};
+
+const confirmTrade = () => {
+    if (!selectedEscrow.value) return;
+    tradePinForm.post(`/paneta/p2p-exchange/escrow/${selectedEscrow.value.id}/confirm`, {
+        onSuccess: () => {
+            showTradeSummaryDialog.value = false;
+            tradePinForm.reset();
+        },
+    });
+};
+
 const getQuotes = async () => {
     if (!form.source_account_id || !form.amount) return;
     
@@ -440,6 +547,10 @@ const calculateFees = computed(() => {
                     <TabsTrigger value="peer-to-peer" class="flex items-center gap-2">
                         <Users class="h-4 w-4" />
                         Peer-to-Peer
+                        <span v-if="pendingRequests && pendingRequests.length > 0"
+                            class="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white font-bold">
+                            {{ pendingRequests.length }}
+                        </span>
                     </TabsTrigger>
                     <TabsTrigger value="fx-marketplace" class="flex items-center gap-2">
                         <Globe class="h-4 w-4" />
@@ -676,6 +787,93 @@ const calculateFees = computed(() => {
 
                 <!-- Peer-to-Peer Tab -->
                 <TabsContent value="peer-to-peer" class="space-y-6">
+
+                    <!-- Incoming Exchange Requests (Initiator) -->
+                    <Card v-if="pendingRequests && pendingRequests.length > 0" class="border-2 border-yellow-400 bg-yellow-50 dark:bg-yellow-950">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2 text-yellow-900 dark:text-yellow-100">
+                                <Bell class="h-5 w-5 text-yellow-600" />
+                                Incoming Exchange Requests
+                                <span class="ml-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs text-white font-bold">
+                                    {{ pendingRequests.length }}
+                                </span>
+                            </CardTitle>
+                            <CardDescription class="text-yellow-800 dark:text-yellow-200">
+                                Counterparties want to exchange with you — review and Accept or Decline each request
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent class="space-y-3">
+                            <div
+                                v-for="req in pendingRequests"
+                                :key="req.id"
+                                class="flex items-center justify-between rounded-lg border border-yellow-300 bg-white p-4 shadow-sm dark:bg-yellow-900/30"
+                            >
+                                <div class="space-y-1">
+                                    <p class="font-semibold">{{ req.counterparty_name }}</p>
+                                    <p class="text-sm text-muted-foreground">{{ req.counterparty_id }}</p>
+                                    <p class="text-sm">
+                                        Wants to sell
+                                        <span class="font-bold text-blue-700">{{ req.sell_amount.toLocaleString() }} {{ req.sell_currency }}</span>
+                                        and receive
+                                        <span class="font-bold text-green-700">{{ req.buy_amount.toLocaleString() }} {{ req.buy_currency }}</span>
+                                    </p>
+                                    <p class="text-xs text-muted-foreground">
+                                        <Clock class="inline h-3 w-3 mr-1" />
+                                        {{ formatTimeAgo(req.created_at) }}
+                                    </p>
+                                </div>
+                                <Button
+                                    size="sm"
+                                    class="bg-yellow-600 hover:bg-yellow-700 text-white"
+                                    @click="openRequestReview(req)"
+                                >
+                                    Review Request
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <!-- Escrows Awaiting PIN Confirmation -->
+                    <Card v-if="escrowsAwaiting && escrowsAwaiting.length > 0" class="border-2 border-purple-400 bg-purple-50 dark:bg-purple-950">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2 text-purple-900 dark:text-purple-100">
+                                <Lock class="h-5 w-5 text-purple-600" />
+                                Smart Escrow — Awaiting Your Confirmation
+                            </CardTitle>
+                            <CardDescription class="text-purple-800 dark:text-purple-200">
+                                Both parties have accepted. Enter your PIN to confirm and execute the exchange.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent class="space-y-3">
+                            <div
+                                v-for="escrow in escrowsAwaiting"
+                                :key="escrow.id"
+                                class="flex items-center justify-between rounded-lg border border-purple-300 bg-white p-4 shadow-sm dark:bg-purple-900/30"
+                            >
+                                <div class="space-y-1">
+                                    <p class="font-semibold">
+                                        Trade: <span class="text-purple-700">{{ escrow.amount.toLocaleString() }} {{ escrow.currency }}</span>
+                                    </p>
+                                    <p class="text-sm text-muted-foreground">
+                                        PANÉTA Fee: {{ escrow.fee.toFixed(2) }} {{ escrow.currency }} &nbsp;|&nbsp;
+                                        Total: <span class="font-semibold">{{ escrow.total.toFixed(2) }} {{ escrow.currency }}</span>
+                                    </p>
+                                    <Badge v-if="escrow.already_confirmed" class="bg-green-100 text-green-700 border-green-300">
+                                        <CheckCircle class="mr-1 h-3 w-3" /> You already confirmed — waiting for counterparty
+                                    </Badge>
+                                </div>
+                                <Button
+                                    v-if="!escrow.already_confirmed"
+                                    size="sm"
+                                    class="bg-purple-600 hover:bg-purple-700 text-white"
+                                    @click="openTradeSummary(escrow)"
+                                >
+                                    Confirm &amp; Execute
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <Users class="h-6 w-6 text-primary" />
@@ -773,7 +971,7 @@ const calculateFees = computed(() => {
 
                                         <!-- Action buttons -->
                                         <div class="flex flex-col gap-2 w-full">
-                                            <Button size="sm" class="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md">
+                                            <Button size="sm" class="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-md" @click="openStartExchangeDialog(offer)">
                                                 <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                                                 </svg>
@@ -1570,6 +1768,306 @@ const calculateFees = computed(() => {
                         <svg class="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                         </svg>
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        <!-- ══ STAGE 1: Start Exchange (Counterparty fills form) ══ -->
+        <Dialog :open="showStartExchangeDialog" @update:open="showStartExchangeDialog = $event">
+            <DialogContent class="max-w-xl">
+                <DialogHeader>
+                    <DialogTitle class="flex items-center gap-2 text-xl">
+                        <ArrowRightLeft class="h-5 w-5 text-blue-600" />
+                        Start Exchange
+                    </DialogTitle>
+                    <DialogDescription>
+                        Fill in your exchange details to send a request to the offer creator
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div v-if="startExchangeOffer" class="space-y-5 py-2">
+                    <!-- Rate summary banner -->
+                    <div class="rounded-lg bg-blue-50 border border-blue-200 p-4">
+                        <p class="text-sm text-blue-800 font-medium">
+                            Offer rate: 1 {{ startExchangeOffer.sell_currency }} = {{ startExchangeOffer.rate.toFixed(4) }} {{ startExchangeOffer.buy_currency }}
+                            &nbsp;•&nbsp; Min: {{ startExchangeOffer.min_amount }} &nbsp;•&nbsp; Max: {{ startExchangeOffer.max_amount.toLocaleString() }}
+                        </p>
+                    </div>
+
+                    <!-- Source account -->
+                    <div class="space-y-2">
+                        <Label>Source Account <span class="text-red-500">*</span></Label>
+                        <Select :model-value="startExchangeForm.source_account_id?.toString()" @update:model-value="v => startExchangeForm.source_account_id = parseInt(v)">
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select account to send from" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem v-for="acc in linkedAccounts" :key="acc.id" :value="acc.id.toString()">
+                                    {{ acc.institution?.name }} — {{ acc.account_identifier }} ({{ acc.currency }})
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p v-if="startExchangeForm.errors.source_account_id" class="text-xs text-red-500">{{ startExchangeForm.errors.source_account_id }}</p>
+                    </div>
+
+                    <!-- Destination account -->
+                    <div class="space-y-2">
+                        <Label>Destination Account <span class="text-red-500">*</span></Label>
+                        <Select :model-value="startExchangeForm.destination_account_id?.toString()" @update:model-value="v => startExchangeForm.destination_account_id = parseInt(v)">
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select account to receive into" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem v-for="acc in linkedAccounts" :key="acc.id" :value="acc.id.toString()">
+                                    {{ acc.institution?.name }} — {{ acc.account_identifier }} ({{ acc.currency }})
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p v-if="startExchangeForm.errors.destination_account_id" class="text-xs text-red-500">{{ startExchangeForm.errors.destination_account_id }}</p>
+                    </div>
+
+                    <!-- Currencies (auto-fill) -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <Label>Sell Currency</Label>
+                            <div class="flex h-10 items-center rounded-md border bg-muted px-3">
+                                <span class="font-bold text-primary">{{ startExchangeOffer.buy_currency }}</span>
+                                <span class="ml-2 text-xs text-muted-foreground">(auto-filled)</span>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <Label>Buy Currency</Label>
+                            <div class="flex h-10 items-center rounded-md border bg-muted px-3">
+                                <span class="font-bold text-primary">{{ startExchangeOffer.sell_currency }}</span>
+                                <span class="ml-2 text-xs text-muted-foreground">(auto-filled)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Amount to sell -->
+                    <div class="space-y-2">
+                        <Label>Amount to Sell ({{ startExchangeOffer.buy_currency }}) <span class="text-red-500">*</span></Label>
+                        <Input
+                            v-model.number="startExchangeForm.sell_amount"
+                            type="number"
+                            step="0.01"
+                            :min="startExchangeOffer.min_amount"
+                            :max="startExchangeOffer.max_amount"
+                            placeholder="Enter amount"
+                            class="text-lg font-semibold"
+                        />
+                        <p v-if="startExchangeForm.errors.sell_amount" class="text-xs text-red-500">{{ startExchangeForm.errors.sell_amount }}</p>
+                    </div>
+
+                    <!-- Receive amount (computed) -->
+                    <div class="space-y-2">
+                        <Label>You Will Receive ({{ startExchangeOffer.sell_currency }})</Label>
+                        <div class="flex h-12 items-center rounded-md border bg-green-50 px-3 border-green-300">
+                            <span class="text-xl font-bold text-green-700">{{ receiveAmount }}</span>
+                            <span class="ml-2 text-sm font-medium text-green-600">{{ startExchangeOffer.sell_currency }}</span>
+                            <span class="ml-auto text-xs text-muted-foreground">auto-calculated</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <Button variant="outline" class="flex-1" @click="showStartExchangeDialog = false">Cancel</Button>
+                    <Button
+                        class="flex-1 bg-blue-600 hover:bg-blue-700"
+                        :disabled="startExchangeForm.processing || !startExchangeForm.source_account_id || !startExchangeForm.destination_account_id || !startExchangeForm.sell_amount"
+                        @click="submitExchangeRequest"
+                    >
+                        <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                        Send Request
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        <!-- ══ STAGE 2: Initiator Reviews Incoming Request (all fields non-editable) ══ -->
+        <Dialog :open="showInitiatorReviewDialog" @update:open="showInitiatorReviewDialog = $event">
+            <DialogContent class="max-w-xl">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-yellow-500 to-orange-500 -m-6 mb-6 p-6 text-white rounded-t-lg">
+                    <DialogHeader>
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
+                                <ArrowRightLeft class="h-6 w-6" />
+                            </div>
+                            <div>
+                                <DialogTitle class="text-xl text-white">Incoming Exchange Request</DialogTitle>
+                                <DialogDescription class="text-yellow-100">
+                                    Review all details carefully — all fields are pre-filled and read-only
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                </div>
+
+                <div v-if="selectedRequest" class="space-y-4">
+                    <!-- Counterparty -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <Label class="text-xs text-muted-foreground uppercase tracking-wide">Counterparty Name</Label>
+                            <div class="rounded-md border bg-muted px-3 py-2 font-semibold">{{ selectedRequest.counterparty_name }}</div>
+                        </div>
+                        <div class="space-y-1">
+                            <Label class="text-xs text-muted-foreground uppercase tracking-wide">Counterparty ID</Label>
+                            <div class="rounded-md border bg-muted px-3 py-2 font-mono text-sm">{{ selectedRequest.counterparty_id }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Exchange details -->
+                    <div class="rounded-lg border-2 border-blue-200 bg-blue-50 p-4 space-y-3">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <Label class="text-xs text-muted-foreground uppercase tracking-wide">They Sell (Buy Currency)</Label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-2xl font-bold text-blue-700">{{ selectedRequest.sell_amount.toLocaleString() }}</span>
+                                    <span class="text-lg font-semibold text-blue-600">{{ selectedRequest.sell_currency }}</span>
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <Label class="text-xs text-muted-foreground uppercase tracking-wide">They Receive (Sell Currency)</Label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-2xl font-bold text-green-700">{{ selectedRequest.buy_amount.toLocaleString() }}</span>
+                                    <span class="text-lg font-semibold text-green-600">{{ selectedRequest.buy_currency }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border-t border-blue-200 pt-3">
+                            <p class="text-sm text-blue-800">
+                                Exchange Rate: 1 {{ selectedRequest.sell_currency }} = {{ selectedRequest.exchange_rate.toFixed(6) }} {{ selectedRequest.buy_currency }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Accounts -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <Label class="text-xs text-muted-foreground uppercase tracking-wide">Source Account</Label>
+                            <div class="rounded-md border bg-muted px-3 py-2 text-sm">
+                                <p class="font-medium">{{ selectedRequest.cp_source_account?.institution ?? '—' }}</p>
+                                <p class="text-muted-foreground font-mono">{{ selectedRequest.cp_source_account?.identifier ?? '—' }}</p>
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <Label class="text-xs text-muted-foreground uppercase tracking-wide">Destination Account</Label>
+                            <div class="rounded-md border bg-muted px-3 py-2 text-sm">
+                                <p class="font-medium">{{ selectedRequest.cp_dest_account?.institution ?? '—' }}</p>
+                                <p class="text-muted-foreground font-mono">{{ selectedRequest.cp_dest_account?.identifier ?? '—' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preconditions notice -->
+                    <div class="rounded-lg bg-green-50 border border-green-200 p-3 flex gap-2">
+                        <ShieldCheck class="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <p class="text-sm text-green-800">
+                            Upon acceptance, the Smart Escrow will automatically verify balances, AML/sanctions, and jurisdiction rules for both parties in milliseconds.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <Button variant="destructive" class="flex-1" @click="declineExchangeRequest">
+                        <XCircle class="mr-2 h-4 w-4" />
+                        Decline
+                    </Button>
+                    <Button class="flex-1 bg-green-600 hover:bg-green-700" @click="acceptExchangeRequest">
+                        <CheckCircle class="mr-2 h-4 w-4" />
+                        Accept
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        <!-- ══ STAGE 3: Trade Summary + PIN Confirmation ══ -->
+        <Dialog :open="showTradeSummaryDialog" @update:open="showTradeSummaryDialog = $event">
+            <DialogContent class="max-w-lg">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-purple-600 to-indigo-600 -m-6 mb-6 p-6 text-white rounded-t-lg">
+                    <DialogHeader>
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
+                                <Lock class="h-6 w-6" />
+                            </div>
+                            <div>
+                                <DialogTitle class="text-xl text-white">Trade Summary</DialogTitle>
+                                <DialogDescription class="text-purple-100">
+                                    Smart Escrow activated — review and confirm with your PIN
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                </div>
+
+                <div v-if="selectedEscrow" class="space-y-4">
+                    <!-- Precondition pass notice -->
+                    <div class="rounded-lg bg-green-50 border border-green-200 p-3 flex gap-2">
+                        <ShieldCheck class="h-5 w-5 text-green-600 flex-shrink-0" />
+                        <div class="text-sm text-green-800">
+                            <p class="font-semibold">All preconditions passed</p>
+                            <p>Balance verified · AML/Sanctions cleared · Jurisdiction rules met</p>
+                        </div>
+                    </div>
+
+                    <!-- Trade amounts -->
+                    <div class="rounded-lg border-2 border-purple-200 bg-purple-50 p-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-muted-foreground uppercase tracking-wide">Amount to Send</p>
+                                <p class="text-2xl font-bold text-purple-700">
+                                    {{ selectedEscrow.amount.toLocaleString() }} {{ selectedEscrow.currency }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="border-t border-purple-200 pt-3 space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-muted-foreground">PANÉTA Fee (0.99%)</span>
+                                <span class="font-semibold text-red-600">+ {{ selectedEscrow.fee.toFixed(2) }} {{ selectedEscrow.currency }}</span>
+                            </div>
+                            <div class="flex justify-between text-base font-bold border-t pt-2">
+                                <span>Total Amount Debited</span>
+                                <span class="text-blue-700">{{ selectedEscrow.total.toFixed(2) }} {{ selectedEscrow.currency }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Holding period notice -->
+                    <div class="rounded-lg bg-amber-50 border border-amber-200 p-3 flex gap-2">
+                        <AlertTriangle class="h-5 w-5 text-amber-600 flex-shrink-0" />
+                        <p class="text-sm text-amber-800">
+                            After confirmation, PANÉTA will hold the instruction for up to <strong>10 minutes</strong> waiting for the counterparty to confirm. Once both parties confirm, two Atomic Instructions will be generated and sent simultaneously to both institutions.
+                        </p>
+                    </div>
+
+                    <!-- PIN Input -->
+                    <div class="space-y-2">
+                        <Label class="font-semibold">Enter PIN to Confirm</Label>
+                        <Input
+                            v-model="tradePinForm.pin"
+                            type="password"
+                            maxlength="4"
+                            placeholder="••••"
+                            class="text-center text-2xl tracking-[0.5em] h-14 font-bold"
+                        />
+                        <p v-if="tradePinForm.errors.pin" class="text-xs text-red-500">{{ tradePinForm.errors.pin }}</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <Button variant="outline" class="flex-1" @click="showTradeSummaryDialog = false">Cancel</Button>
+                    <Button
+                        class="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+                        :disabled="tradePinForm.processing || tradePinForm.pin.length < 4"
+                        @click="confirmTrade"
+                    >
+                        <Lock class="mr-2 h-4 w-4" />
+                        Confirm &amp; Execute Exchange
                     </Button>
                 </div>
             </DialogContent>
